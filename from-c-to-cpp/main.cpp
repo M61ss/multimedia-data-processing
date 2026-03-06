@@ -1,57 +1,88 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdint.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <cstdint>
+#include <cassert>
 
 static int cmp_int32(const void* a, const void* b) {
-    int ia = *(const int*)a;
-    int ib = *(const int*)b;
+    int32_t ia = *(const int32_t*)a;
+    int32_t ib = *(const int32_t*)b;
     return (ia > ib) - (ia < ib);
 }
 
-typedef struct vector {
+struct vector {
     int32_t* data_;
     size_t n_;
     size_t cap_;
 
+    // Default constructor
     vector() {
-        this->data_ = NULL;
-        this->n_ = 0;
-        this->cap_ = 0;
+        data_ = nullptr;
+        n_ = 0;
+        cap_ = 0;
     }
-    ~vector() {
-        free(this->data_);
+    // Constructor with starting size
+    vector(size_t n) {
+        n_ = n;
+        cap_ = n;
+        data_ = new int32_t[n];
     }
-
-    void push_back(int val) {
-        if (this->n_ == this->cap_) {
-            size_t new_cap = (this->cap_ == 0) ? 1024 : this->cap_ * 2;
-            int* tmp = (int*)realloc(this->data_, new_cap * sizeof(*this->data_));
-            this->data_ = tmp;
-            this->cap_ = new_cap;
+    // Copy constructor
+    vector(const vector& other) {
+        n_ = other.n_;
+        cap_ = other.cap_;
+        data_ = new int32_t[n_];
+        for (size_t i = 0; i < n_; ++i) {
+            data_[i] = other.data_[i];
         }
-
-        this->data_[this->n_] = val;
-        this->n_++;
+    }
+    // Assignment operator
+    vector& operator=(const vector& rhs) {
+        if (this == &rhs) {
+            return *this;
+        }
+        n_ = rhs.n_;
+        cap_ = rhs.cap_;
+        delete[] data_;
+        data_ = new int32_t[n_];
+        for (size_t i = 0; i < n_; ++i) {
+            data_[i] = rhs.data_[i];
+        }
+        return *this;
     }
 
+    ~vector() {
+        delete[] data_;
+    }
+    void push_back(int32_t val) {
+        if (n_ == cap_) {
+            size_t new_cap = (cap_ == 0) ? 4 : cap_ * 2;
+            int32_t* tmp = new int32_t[new_cap];
+            for (size_t i = 0; i < n_; ++i) {
+                tmp[i] = data_[i];
+            }
+            delete[] data_;
+            data_ = tmp;
+            cap_ = new_cap;
+        }
+        data_[n_] = val;
+        n_++;
+    }
     void sort() {
-        qsort(this->data_, this->n_, sizeof(*this->data_), cmp_int32);
+        qsort(data_, n_, sizeof(int32_t), cmp_int32);
     }
-
     size_t size() const {
-        return this->n_;
+        return n_;
     }
-
     int at(size_t pos) const {
-        assert(pos < this->n_);
-        return this->data_[pos];
+        assert(pos < n_);
+        return data_[pos];
     }
-} vector;
+    int operator[](size_t pos) const {
+        return data_[pos];
+    }
+};
 
 int main(int argc, char** argv)
 {
@@ -67,7 +98,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    vector* arr = new vector();
+    vector arr;
 
     char token[128];
     while (fscanf(fin, "%127s", token) == 1) {
@@ -80,24 +111,23 @@ int main(int argc, char** argv)
         if (errno == ERANGE || val < INT32_MIN || val > INT32_MAX) {
             break;
         }
-
-        arr->push_back(val);
+        arr.push_back(val);
     }
 
     fclose(fin);
 
-    arr->sort();
+    vector x(10); // vector x(arr); 
+    x = arr;
+    arr.sort();
 
     FILE* fout = fopen(out_name, "w");
     if (!fout) {
-        delete arr;
         return 1;
     }
-    for (size_t i = 0; i < arr->size(); i++) {
-        fprintf(fout, "%d\n", arr->at(i));
+    for (size_t i = 0; i < arr.size(); i++) {
+        fprintf(fout, "%d\n", arr[i]);
     }
     fclose(fout);
 
-    delete arr;
     return 0;
 }
