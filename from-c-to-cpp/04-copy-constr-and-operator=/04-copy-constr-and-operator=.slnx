@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="04-copy-constr-and-assignement-op.vcxproj" />
+  <Project Path="04-copy-constr-and-operator=.vcxproj" />
 </Solution>

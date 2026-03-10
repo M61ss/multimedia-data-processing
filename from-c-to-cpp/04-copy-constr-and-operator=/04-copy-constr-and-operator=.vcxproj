@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{ec9cd852-6ebb-45c2-baef-5f439f7a3e75}</ProjectGuid>
-    <RootNamespace>My04copyconstrandassignementop</RootNamespace>
+    <ProjectGuid>{2101bbff-716d-4581-a619-27adbd741a69}</ProjectGuid>
+    <RootNamespace>My04copyconstrandoperator</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
