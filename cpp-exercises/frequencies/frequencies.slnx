@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="frequencies.vcxproj" />
+  <Project Path="frequencies.vcxproj" Id="a90164e3-4246-41ae-9df3-8e090623dbb6" />
 </Solution>

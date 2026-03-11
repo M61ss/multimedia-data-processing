@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 #include <bitset>
 
 int main(int argc, char** argv) {
@@ -34,7 +35,9 @@ int main(int argc, char** argv) {
 	int val;
 	while (is >> val) {
 		std::bitset<32> binary(val);
-		if (!(os << binary << std::endl)) {
+		std::string littleEndian = binary.to_string();
+		std::reverse(littleEndian.begin(), littleEndian.end());
+		if (!(os << littleEndian << std::endl)) {
 			std::cout << "Error writing on " << o_filename << "." << std::endl;
 			return EXIT_FAILURE;
 		}
