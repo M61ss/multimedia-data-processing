@@ -35,6 +35,8 @@ int main(int argc, char** argv) {
 	int val;
 	while (is >> val) {
 		std::bitset<32> binary(val);
+		binary = binary.flip();
+		binary = binary << 1;
 		std::string littleEndian = binary.to_string();
 		std::reverse(littleEndian.begin(), littleEndian.end());
 		if (!(os << littleEndian << std::endl)) {
