@@ -20,10 +20,7 @@ int main(int argc, char** argv) {
 	std::map<uint8_t, int> occurrencies;
 	while (is) {
 		uint8_t val = is.get();
-		if (!occurrencies.contains(val)) {
-			occurrencies.insert({ val, 0 });
-		}
-		occurrencies.at(val)++;
+		++occurrencies[val];
 	}
 
 	std::ofstream os(o_filename, std::ios::binary);
