@@ -23,12 +23,12 @@ int main(int argc, char** argv) {
 		++occurrencies[val];
 	}
 
-	std::ofstream os(o_filename, std::ios::binary);
+	std::ofstream os(o_filename/*, std::ios::binary*/);
 	if (!os) {
 		return EXIT_FAILURE;
 	}
 	for (const auto& it : occurrencies) {
-		// os << std::hex << std::setw(2) << std::setfill('0') << it.first;
+		// os << std::hex << std::setw(2) << std::setfill('0') << int(it.first);
 		// os << std::dec << "\t" << it.second << std::endl;
 		std::println(os, "{:02x}\t{}", it.first, it.second);
 	}
