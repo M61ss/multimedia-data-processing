@@ -34,10 +34,8 @@ int main(int argc, char** argv) {
 
 	int val;
 	while (is >> val) {
-		std::bitset<32> binary(val);
-		binary = binary.flip();
-		binary = binary << 1;
-		std::string littleEndian = binary.to_string();
+		val = ~val + 0b1;
+		std::string littleEndian = std::bitset<32>(val).to_string();
 		std::reverse(littleEndian.begin(), littleEndian.end());
 		if (!(os << littleEndian << std::endl)) {
 			std::cout << "Error writing on " << o_filename << "." << std::endl;
