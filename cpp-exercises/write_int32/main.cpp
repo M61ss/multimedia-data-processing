@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <algorithm>
 #include <bitset>
+#include <bit>
 
 int main(int argc, char** argv) {
 	if (argc != 3) {
@@ -34,10 +34,8 @@ int main(int argc, char** argv) {
 
 	int val;
 	while (is >> val) {
-		val = ~val + 0b1;
-		std::string littleEndian = std::bitset<32>(val).to_string();
-		std::reverse(littleEndian.begin(), littleEndian.end());
-		if (!(os << littleEndian << std::endl)) {
+		val = std::byteswap(~val + 1);
+		if (!(os << std::bitset<32>(val) << std::endl)) {
 			std::cout << "Error writing on " << o_filename << "." << std::endl;
 			return EXIT_FAILURE;
 		}
