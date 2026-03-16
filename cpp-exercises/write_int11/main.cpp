@@ -1,5 +1,12 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <bitset>
+
+typedef struct int11_t
+{
+	signed int i : 11;
+} int11_t;
 
 int main(int argc, char** argv) {
 	if (argc != 3) {
@@ -23,6 +30,8 @@ int main(int argc, char** argv) {
 		std::cout << "Error opening '" << i_filename << "'." << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	std::vector<int11_t> v;
 
 	return EXIT_SUCCESS;
 }
