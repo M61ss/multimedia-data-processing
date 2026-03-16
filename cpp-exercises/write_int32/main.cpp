@@ -1,45 +1,72 @@
-#include <iostream>
 #include <fstream>
-#include <string>
-#include <bitset>
-#include <bit>
+#include <vector>
+#include <iterator>
+#include <algorithm>
 
-int main(int argc, char** argv) {
+template<typename T>
+std::ostream& raw_write(std::ostream& os, const T& x, size_t size = sizeof(T)) {
+	return os.write(reinterpret_cast<const char*>(&x), size);
+}
+
+template<typename T>
+std::ostream& raw_write(std::ostream& os, const std::vector<T>& x) {
+	return os.write(reinterpret_cast<const char*>(x.data()), x.size() * sizeof(T));
+}
+
+int main(int argc, char* argv[])
+{
 	if (argc != 3) {
-		std::cout << "Wrong parameter number. Given " << argc << ", expected 3." << std::endl;
-		return EXIT_FAILURE;
+		return 1;
 	}
 
-	std::string i_filename = argv[1];
-	if (!i_filename.ends_with(".txt")) {
-		std::cout << "First file must be .txt." << std::endl;
-		return EXIT_FAILURE;
-	}
-	std::string o_filename = argv[2];
-	if (!o_filename.ends_with(".bin")) {
-		std::cout << "Second file must be .bin." << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	std::ifstream is(i_filename/*, std::ios::binary */);
+	std::ifstream is(argv[1]/*, std::ios::binary*/);
 	if (!is) {
-		std::cout << "Error opening " << i_filename << std::endl;
-		return EXIT_FAILURE;
+		return 1;
 	}
-	std::ofstream os(o_filename/*, std::ios::binary*/);
+
+	// Option 1
+	//std::vector<int32_t> v;
+	//int32_t val;
+	//while (is >> val) {
+	//	v.push_back(val);
+	//}
+
+	// Option 2
+	//std::vector<int32_t> v;
+	//std::istream_iterator<int32_t> begin(is);
+	//std::istream_iterator<int32_t> end;
+	//for (auto it = begin; it != end; ++it) {
+	//	v.push_back(*it);
+	//}
+
+	// Option 3
+	//std::vector<int32_t> v;
+	//std::istream_iterator<int32_t> start(is);
+	//std::istream_iterator<int32_t> end;
+	//std::copy(start, end, back_inserter(v));
+
+	// Option 4
+	//std::istream_iterator<int32_t> start(is);
+	//std::istream_iterator<int32_t> end;
+	//std::vector<int32_t> v(start, end);
+
+	// Option 4: one liner - Beware The Most Vexing Syntax
+	std::vector<int32_t> v{ std::istream_iterator<int32_t>(is), {} };
+
+	std::ofstream os(argv[2], std::ios::binary);
 	if (!os) {
-		std::cout << "Error opening " << o_filename << std::endl;
-		return EXIT_FAILURE;
+		return 1;
 	}
+	//os.write(reinterpret_cast<const char*>(v.data()), v.size() * sizeof(int32_t));
+	raw_write(os, v);
+	//for (const auto& x : v) {
+	//	raw_write(os, x);
+	//	//os.write(reinterpret_cast<const char*>(&x), sizeof(int32_t));
+	//	//os.put((x >> 0) & 0xff);
+	//	//os.put((x >> 8) & 0xff);
+	//	//os.put((x >> 16) & 0xff);
+	//	//os.put((x >> 24) & 0xff);
+	//}
 
-	int val;
-	while (is >> val) {
-		val = std::byteswap(~val + 1);
-		if (!(os << std::bitset<32>(val) << std::endl)) {
-			std::cout << "Error writing on " << o_filename << "." << std::endl;
-			return EXIT_FAILURE;
-		}
-	}
-
-	return EXIT_SUCCESS;
+	return 0;
 }
