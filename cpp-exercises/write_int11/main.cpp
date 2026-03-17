@@ -32,8 +32,20 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	int16_t pack;
+	int8_t free_bits = 16;
+	int16_t extracted;
 	std::vector<int32_t> v{ std::istream_iterator<int32_t>(is), {} };
-	
+	for (const auto& x : v) {
+		extracted = x & 0x7ff;
+		pack |= (extracted >> (16 - free_bits));
+		free_bits = 16 - (11 - (16 - free_bits));
+		pack <<= free_bits;
+		if (free_bits == 0) {
+			os << pack;
+			free_bits = 16;
+		}
+	}
 
 	return EXIT_SUCCESS;
 }
