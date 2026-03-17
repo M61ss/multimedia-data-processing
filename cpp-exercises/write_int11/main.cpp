@@ -1,8 +1,25 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <bitset>
 #include <iterator>
+
+class BitWriter
+{
+public:
+	BitWriter(std::ostream& os);
+	~BitWriter();
+
+private:
+	std::ostream& os_;
+	uint8_t n_;
+	uint8_t buffer_;
+};
+
+BitWriter::BitWriter(std::ostream& os) : os_(os), n_(0), buffer_(0) {}
+
+BitWriter::~BitWriter()
+{
+}
 
 int main(int argc, char** argv) {
 	if (argc != 3) {
@@ -32,28 +49,7 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	int16_t pack = 0;
-	int8_t avail_bits = 16;
-	const int16_t mask = 0x7ff;
-	std::vector<int32_t> v{ std::istream_iterator<int32_t>(is), {} };
-	for (const auto& x : v) {
-		int8_t written_bits = 11;
-		if (avail_bits > 10) {
-			pack |= (x & mask);
-		}
-		else
-		{
-			int8_t slider = 11 - avail_bits;
-			pack |= (x & ((mask >> slider) << slider)) >> slider;
-			os << pack;
-			pack = 0;
-			pack |= (x & (mask >> avail_bits));
-			written_bits -= avail_bits;
-			avail_bits = 16;
-		}
-		avail_bits = 16 - (written_bits - (16 - avail_bits));
-		pack <<= avail_bits;
-	}
+	
 
 	return EXIT_SUCCESS;
 }
