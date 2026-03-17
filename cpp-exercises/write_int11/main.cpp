@@ -39,17 +39,17 @@ int main(int argc, char** argv) {
 	for (const auto& x : v) {
 		int8_t written_bits = 11;
 		if (avail_bits > 10) {
-			pack |= x & mask;
+			pack |= (x & mask);
 		}
 		else
 		{
-			written_bits = avail_bits;
-			int8_t slider = 11 - written_bits;
-			pack |= x & ((mask >> slider) << slider);
+			int8_t slider = 11 - avail_bits;
+			pack |= (x & ((mask >> slider) << slider)) >> slider;
 			os << pack;
 			pack = 0;
+			pack |= (x & (mask >> avail_bits));
+			written_bits -= avail_bits;
 			avail_bits = 16;
-			pack |= x & (mask >> written_bits);
 		}
 		avail_bits = 16 - (written_bits - (16 - avail_bits));
 		pack <<= avail_bits;
