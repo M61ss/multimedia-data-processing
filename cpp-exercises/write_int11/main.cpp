@@ -51,21 +51,21 @@ int main(int argc, char** argv) {
 	const int16_t mask = 0x7ff;
 	std::vector<int32_t> v{ std::istream_iterator<int32_t>(is), {} };
 	for (const auto& x : v) {
-		int8_t remained_bits = 11;
+		int8_t written_bits = 11;
 		if (avail_bits > 10) {
 			pack |= x & mask;
 		}
 		else
 		{
-			remained_bits -= avail_bits;
-			int8_t slider = 11 - remained_bits;
+			written_bits = avail_bits;
+			int8_t slider = 11 - written_bits;
 			pack |= x & ((mask >> slider) << slider);
 			os << pack;
 			pack = 0;
 			avail_bits = 16;
-			pack |= x & (mask >> remained_bits);
+			pack |= x & (mask >> written_bits);
 		}
-		avail_bits = 16 - (remained_bits - (16 - avail_bits));
+		avail_bits = 16 - (written_bits - (16 - avail_bits));
 		pack <<= avail_bits;
 	}
 
