@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 		std::cout << "Error opening '" << i_filename << "'." << std::endl;
 		return EXIT_FAILURE;
 	}
-	std::ofstream os(o_filename/*, std::ios::binary*/);
+	std::ofstream os(o_filename, std::ios::binary);
 	if (!os) {
 		std::cout << "Error opening '" << o_filename << "'." << std::endl;
 		return EXIT_FAILURE;
