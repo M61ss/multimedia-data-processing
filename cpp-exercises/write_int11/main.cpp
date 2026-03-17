@@ -32,19 +32,41 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	//	int16_t pack = 0;
+	//	int8_t free_bits = 16;
+	//	const int16_t mask = 0x7ff;
+	//	std::vector<int32_t> v{ std::istream_iterator<int32_t>(is), {} };
+	//	for (const auto& x : v) {
+	//		pack |= (x & (mask << (16 - free_bits)));
+	//		free_bits = 16 - (11 - (16 - free_bits));
+	//		pack <<= free_bits;
+	//		if (free_bits == 0) {
+	//			os << pack;
+	//			free_bits = 16;
+	//		}
+	//	}
+
 	int16_t pack = 0;
-	int8_t free_bits = 16;
-	int16_t extracted;
+	int8_t avail_bits = 16;
+	const int16_t mask = 0x7ff;
 	std::vector<int32_t> v{ std::istream_iterator<int32_t>(is), {} };
 	for (const auto& x : v) {
-		extracted = x & 0x7ff;
-		pack |= (extracted >> (16 - free_bits));
-		free_bits = 16 - (11 - (16 - free_bits));
-		pack <<= free_bits;
-		if (free_bits == 0) {
-			os << pack;
-			free_bits = 16;
+		int8_t remained_bits = 11;
+		if (avail_bits > 10) {
+			pack |= x & mask;
 		}
+		else
+		{
+			remained_bits -= avail_bits;
+			int8_t slider = 11 - remained_bits;
+			pack |= x & ((mask >> slider) << slider);
+			os << pack;
+			pack = 0;
+			avail_bits = 16;
+			pack |= x & (mask >> remained_bits);
+		}
+		avail_bits = 16 - (remained_bits - (16 - avail_bits));
+		pack <<= avail_bits;
 	}
 
 	return EXIT_SUCCESS;
