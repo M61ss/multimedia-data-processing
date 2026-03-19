@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="elias.vcxproj" />
+  <Project Path="elias.vcxproj" Id="e234feff-f29b-4fb2-97c5-4feac4728607" />
 </Solution>
