@@ -9,25 +9,24 @@ class Decoder {
 	uint8_t buffer_;
 	uint8_t n_;
 
-	void readBit(T& val) {
-		--n_;
-		uint8_t currBit = (buffer_ >> n_) & 1;
-		val = (val << 1) | currBit;
+	T readBit() {
 		if (n_ == 0) {
 			buffer_ = is_.get();
 			n_ = 8;
 		}
+		--n_;
+		return (buffer_ >> n_) & 1;
 	}
 
 	T readValue() {
 		T val = 0;
 		uint8_t nBits = 0;
 		while (val == 0) {
-			readBit(val);
+			val = (val << 1) | readBit();
 			++nBits;
 		}
 		for (int i = 0; i < (nBits - 1); i++) {
-			readBit(val);
+			val = (val << 1) | readBit();
 		}
 		return val;
 	}
@@ -39,9 +38,9 @@ public:
 	}
 	~Decoder() {}
 
-	T decodeOne() {
-		T val = readValue();
+	std::ifstream& decodeOne(T& val) {
+		val = readValue();
 		val = (val % 2) == 0 ? val / -2 : (val - 1) / 2;
-		return val;
+		return is_;
 	}
 };

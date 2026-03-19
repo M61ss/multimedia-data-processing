@@ -46,9 +46,10 @@ int main(int argc, char** argv) {
 
 		Decoder<int32_t> decoder(is);
 		std::vector<int32_t> v;
-		while (is) {
-			int32_t val = decoder.decodeOne();
-			if (is) v.push_back(val);
+		int32_t val = 0;
+		while (decoder.decodeOne(val)) {
+			v.push_back(val);
+			val = 0;
 		}
 
 		for (const auto& x : v) {
