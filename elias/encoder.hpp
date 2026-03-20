@@ -13,8 +13,7 @@ public:
 
 	void operator()(T val) {
 		val = (val < 0) ? val * -2 : val * 2 + 1;
-		uint8_t bitCount = static_cast<uint8_t>(std::bit_width(static_cast<uint64_t>(val)));
-		writePadding(bitCount - 1);
+		uint8_t bitCount = static_cast<uint8_t>(std::bit_width(static_cast<uint64_t>(val))) * 2 - 1;
 		writeValue(val, bitCount);
 	}
 
