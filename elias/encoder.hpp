@@ -36,12 +36,6 @@ private:
 		while (n_ > 0) writeBit(bit);
 	}
 
-	void writePadding(uint8_t length) {
-		for (int i = 0; i < length; i++) {
-			writeBit(0);
-		}
-	}
-
 	void writeValue(const T& val, uint8_t nBits) {
 		for (int i = (nBits - 1); i >= 0; i--) {
 			uint8_t currBit = (val >> i) & 1;
