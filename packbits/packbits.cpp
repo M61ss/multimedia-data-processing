@@ -16,7 +16,7 @@ public:
 	std::ofstream& compress() {
 		State state = Unknown;
 		bool write = false;
-		uint8_t readCount = 0, val;
+		uint8_t val;
 		std::vector<uint8_t> v;
 		while (is_.read(reinterpret_cast<char *>(&val), sizeof(uint8_t))) {
 			if (state == Unknown && !v.empty()) {
@@ -29,14 +29,13 @@ public:
 				write = (v.back() != val) ? false : true;
 			}
 			if (write == true) {
-				writePack(v, readCount, state);
+				writePack(v, state);
 				write = false;
 			}
 
 			v.push_back(val);
-			readCount++;
 		}
-		if (!v.empty()) writePack(v, readCount, state);
+		if (!v.empty()) writePack(v, state);
 		uint8_t eof = 128;
 		os_.write(reinterpret_cast<const char*>(&eof), 1);
 		return os_;
@@ -71,9 +70,9 @@ private:
 	std::ifstream& is_;
 	std::ofstream& os_;
 
-	std::ofstream& writePack(std::vector<uint8_t>& v, uint8_t& readCount, State& state) {
+	std::ofstream& writePack(std::vector<uint8_t>& v, State& state) {
 		if (state == Copy) {
-			uint8_t command = readCount - 1;
+			size_t command = v.size() - 1;
 			os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
 			for (uint8_t i = 0; i < command + 1; i++) {
 				os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
@@ -81,13 +80,12 @@ private:
 			}
 		}
 		else {
-			uint8_t command = 257 - readCount;
+			size_t command = 257 - v.size();
 			os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
 			os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
 			v.erase(v.begin(), v.end());
 		}
 		state = Unknown;
-		readCount = 0;
 		return os_;
 	}
 };
