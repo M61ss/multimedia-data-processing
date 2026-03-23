@@ -38,6 +38,7 @@ public:
 		if (!v.empty()) writePack(v, state);
 		uint8_t eof = 128;
 		os_.write(reinterpret_cast<const char*>(&eof), 1);
+
 		return os_;
 	}
 
