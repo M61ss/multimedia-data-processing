@@ -87,6 +87,7 @@ private:
 			v.erase(v.begin(), v.end());
 		}
 		state = Unknown;
+
 		return os_;
 	}
 };
