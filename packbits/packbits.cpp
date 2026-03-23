@@ -5,8 +5,7 @@
 enum State {
 	Unknown,
 	Run,
-	Copy,
-	Write
+	Copy
 };
 
 class Packbits {
@@ -14,37 +13,86 @@ public:
 	Packbits(std::ifstream& is, std::ofstream& os) : is_(is), os_(os) {}
 	~Packbits() {}
 
-	void compress() {
+	std::ofstream& compress() {
 		State state = Unknown;
-		uint8_t readCount = 0;
-		uint8_t val;
+		bool write = false;
+		uint8_t readCount = 0, val;
 		std::vector<uint8_t> v;
-		while (is_ >> val) {
-			if (state == Unknown) {
-				state = (v.front() == val) ? Run : Copy;
+		while (is_.read(reinterpret_cast<char *>(&val), sizeof(uint8_t))) {
+			if (state == Unknown && v.size() > 1) {
+				state = (v.back() == val) ? Run : Copy;
 			} 
 			else if (state == Run) {
-				state = (v.front() == val) ? Run : Write;
+				write = (v.back() == val) ? false : true;
 			}
-			else {
-				state = (v.front() != val) ? Copy : Write;
+			else if (state == Copy) {
+				write = (v.back() != val) ? false : true;
 			}
-			if (state == Write) {
+			if (write == true) {
+				writePack(v, readCount, state);
+				write = false;
+			}
 
-				state = Unknown;
-			}
 			v.push_back(val);
 			readCount++;
 		}
+		if (v.size() == 2) {
+			state = (v.back() == v.front()) ? Run : Copy;
+			writePack(v, readCount, state);
+		}
+		uint8_t eof = 128;
+		os_.write(reinterpret_cast<const char*>(&eof), 1);
+		return os_;
 	}
 
-	void decompress() {
+	std::ofstream& decompress() {
+		uint8_t command;
+		while (is_.read(reinterpret_cast<char *>(&command), sizeof(uint8_t))) {
+			if (command == 128) {
+				break;
+			}
+			else if (command < 128) {
+				uint8_t tmp;
+				for (uint8_t i = 0; i < command + 1; i++) {
+					is_.read(reinterpret_cast<char*>(&tmp), sizeof(uint8_t));
+					os_.write(reinterpret_cast<const char*>(&tmp), sizeof(uint8_t));
+				}
+			}
+			else {
+				uint8_t val;
+				is_.read(reinterpret_cast<char*>(&val), sizeof(uint8_t));
+				for (uint8_t i = 0; i < 257 - command; i++) {
+					os_.write(reinterpret_cast<const char*>(&val), sizeof(uint8_t));
+				}
+			}
+		}
 
+		return os_;
 	}
 
 private:
 	std::ifstream& is_;
 	std::ofstream& os_;
+
+	std::ofstream& writePack(std::vector<uint8_t>& v, uint8_t& readCount, State& state) {
+		if (state == Copy) {
+			uint8_t command = readCount - 1;
+			os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
+			for (uint8_t i = 0; i < command + 1; i++) {
+				os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
+				v.erase(v.begin());
+			}
+		}
+		else {
+			uint8_t command = 257 - readCount;
+			os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
+			os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
+			v.erase(v.begin(), v.end());
+		}
+		state = Unknown;
+		readCount = 0;
+		return os_;
+	}
 };
 
 int main(int argc, char** argv) {
@@ -69,10 +117,10 @@ int main(int argc, char** argv) {
 
 	Packbits packbits(is, os);
 	if (mode == "c") {
-		
+		packbits.compress();
 	}
 	else if (mode == "d") {
-
+		packbits.decompress();
 	}
 	else {
 		std::cout << "First paramter must be 'c' (compress) or 'd' (decompress)." << std::endl;
