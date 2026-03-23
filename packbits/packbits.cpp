@@ -19,7 +19,7 @@ public:
 		uint8_t readCount = 0, val;
 		std::vector<uint8_t> v;
 		while (is_.read(reinterpret_cast<char *>(&val), sizeof(uint8_t))) {
-			if (state == Unknown && v.size() > 1) {
+			if (state == Unknown && !v.empty()) {
 				state = (v.back() == val) ? Run : Copy;
 			} 
 			else if (state == Run) {
@@ -36,10 +36,7 @@ public:
 			v.push_back(val);
 			readCount++;
 		}
-		if (v.size() == 2) {
-			state = (v.back() == v.front()) ? Run : Copy;
-			writePack(v, readCount, state);
-		}
+		if (!v.empty()) writePack(v, readCount, state);
 		uint8_t eof = 128;
 		os_.write(reinterpret_cast<const char*>(&eof), 1);
 		return os_;
