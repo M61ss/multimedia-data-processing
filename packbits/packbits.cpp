@@ -19,6 +19,16 @@ public:
 		uint8_t val;
 		std::vector<uint8_t> v;
 		while (is_.read(reinterpret_cast<char *>(&val), sizeof(uint8_t))) {
+			if (write == true) {
+				if (state == Copy) {
+					writeCopyPack(v, v.size() - 2, state);
+				}
+				else {
+					writeRunPack(v, state);
+				}
+				write = false;
+			}
+
 			if (state == Unknown && !v.empty()) {
 				state = (v.back() == val) ? Run : Copy;
 			} 
@@ -28,14 +38,9 @@ public:
 			else if (state == Copy) {
 				write = (v.back() != val) ? false : true;
 			}
-			if (write == true) {
-				writePack(v, state);
-				write = false;
-			}
-
 			v.push_back(val);
 		}
-		if (!v.empty()) writePack(v, state);
+		if (!v.empty()) writeCopyPack(v, v.size(), state);
 		uint8_t eof = 128;
 		os_.write(reinterpret_cast<const char*>(&eof), 1);
 
@@ -71,21 +76,23 @@ private:
 	std::ifstream& is_;
 	std::ofstream& os_;
 
-	std::ofstream& writePack(std::vector<uint8_t>& v, State& state) {
-		if (state == Copy) {
-			size_t command = v.size() - 1;
-			os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
-			for (uint8_t i = 0; i < command + 1; i++) {
-				os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
-				v.erase(v.begin());
-			}
-		}
-		else {
-			size_t command = 257 - v.size();
-			os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
+	std::ofstream& writeCopyPack(std::vector<uint8_t>& v, const size_t& writeCount, State& state) {
+		uint8_t command = static_cast<uint8_t>(writeCount) - 1;
+		os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
+		for (uint8_t i = 0; i < writeCount; i++) {
 			os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
-			v.erase(v.begin(), v.end());
+			v.erase(v.begin());
 		}
+		if (v.size() > 1) state = (v.back() == v.front()) ? Run : Copy;
+
+		return os_;
+	}
+
+	std::ofstream& writeRunPack(std::vector<uint8_t>& v, State& state) {
+		size_t command = 258 - v.size();
+		os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
+		os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
+		v.erase(v.begin(), v.end() - 1);
 		state = Unknown;
 
 		return os_;
