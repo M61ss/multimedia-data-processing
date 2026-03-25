@@ -110,7 +110,7 @@ private:
 			}
 		}
 		uint8_t eof = 128;
-		os_.write(reinterpret_cast<const char*>(&eof), 1);
+		os_.write(reinterpret_cast<const char*>(&eof), sizeof(uint8_t));
 
 		return os_;
 	}
