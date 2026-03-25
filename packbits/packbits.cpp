@@ -21,7 +21,7 @@ public:
 		while (is_.read(reinterpret_cast<char *>(&val), sizeof(uint8_t))) {
 			if (write == true) {
 				if (state == Copy) {
-					writeCopyPack(v, v.size() - 2, state);
+					writeCopyPack(v, state);
 				}
 				else {
 					writeRunPack(v, state);
@@ -34,16 +34,16 @@ public:
 			} 
 			else if (state == Run) {
 				write = (v.back() == val) ? false : true;
+				if (v.size() == 128) write = true;
 			}
 			else if (state == Copy) {
 				write = (v.back() != val) ? false : true;
+				if (v.size() == 129) write = true;
 			}
 			v.push_back(val);
 		}
-		if (!v.empty()) writeCopyPack(v, v.size(), state);
-		uint8_t eof = 128;
-		os_.write(reinterpret_cast<const char*>(&eof), 1);
-
+		writeEnd(v, state);
+		
 		return os_;
 	}
 
@@ -76,8 +76,9 @@ private:
 	std::ifstream& is_;
 	std::ofstream& os_;
 
-	std::ofstream& writeCopyPack(std::vector<uint8_t>& v, const size_t& writeCount, State& state) {
-		uint8_t command = static_cast<uint8_t>(writeCount) - 1;
+	std::ofstream& writeCopyPack(std::vector<uint8_t>& v, State& state, const uint8_t& excess = 2) {
+		uint8_t writeCount = static_cast<uint8_t>(v.size()) - excess;
+		uint8_t command = writeCount - 1;
 		os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
 		for (uint8_t i = 0; i < writeCount; i++) {
 			os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
@@ -88,12 +89,28 @@ private:
 		return os_;
 	}
 
-	std::ofstream& writeRunPack(std::vector<uint8_t>& v, State& state) {
-		size_t command = 258 - v.size();
+	std::ofstream& writeRunPack(std::vector<uint8_t>& v, State& state, const uint8_t& excess = 1) {
+		uint8_t writeCount = static_cast<uint8_t>(v.size()) - excess;
+		uint8_t command = 257 - writeCount;
 		os_.write(reinterpret_cast<const char*>(&command), sizeof(uint8_t));
 		os_.write(reinterpret_cast<const char*>(&v[0]), sizeof(uint8_t));
 		v.erase(v.begin(), v.end() - 1);
 		state = Unknown;
+
+		return os_;
+	}
+
+	std::ofstream& writeEnd(std::vector<uint8_t>& v, State& state) {
+		if (!v.empty()) {
+			if (state == Copy) {
+				writeCopyPack(v, state, 0);
+			}
+			else {
+				writeRunPack(v, state, 0);
+			}
+		}
+		uint8_t eof = 128;
+		os_.write(reinterpret_cast<const char*>(&eof), 1);
 
 		return os_;
 	}
