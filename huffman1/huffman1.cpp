@@ -6,11 +6,11 @@ class BitReader {
 public:
 	BitReader(std::ifstream& is) : is_(is), buffer_(0), n_(0) {
 		is_.read(reinterpret_cast<char*>(&buffer_), sizeof(buffer_));
-		n_ = 7;
+		n_ = 8;
 	}
 
-	uint16_t readBits(uint8_t nBits) {
-		uint16_t out = 0;
+	size_t readBits(uint8_t nBits) {
+		size_t out = 0;
 		for (uint8_t i = 0; i < nBits; i++) {
 			out = (out << 1) | readBit();
 		}
@@ -25,8 +25,9 @@ private:
 	uint8_t readBit() {
 		if (n_ == 0) {
 			is_.read(reinterpret_cast<char*>(&buffer_), sizeof(buffer_));
-			n_ = 7;
+			n_ = 8;
 		}
+		--n_;
 		return (buffer_ >> n_) & 1;
 	}
 };
@@ -49,7 +50,7 @@ public:
 	std::ofstream& decompress() {
 		char magicNumber[8];
 		uint16_t tabEntries;
-		std::map<uint8_t, uint16_t> symbols;
+		std::map<uint8_t, size_t> symbols;
 
 		is_.read(magicNumber, sizeof(magicNumber));
 
@@ -62,6 +63,7 @@ public:
 			uint8_t symbol = 0;
 			is_.read(reinterpret_cast<char*>(&symbol), sizeof(symbol));
 			uint8_t codeLength = static_cast<uint8_t>(br.readBits(5));
+			symbols[symbol] = br.readBits(codeLength);
 		}
 		
 		return os_;
