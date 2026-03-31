@@ -76,7 +76,7 @@ private:
 	std::ifstream& getFrequencies(std::map<uint8_t, size_t>& frequencies, size_t& numSymbols) {
 		while (is_) {
 			uint8_t curr;
-			is_ >> curr;
+			is_.read(reinterpret_cast<char*>(&curr), sizeof(uint8_t));
 			++frequencies[curr];
 			++numSymbols;
 		}
