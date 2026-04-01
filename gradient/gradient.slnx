@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="gradient.vcxproj" />
+  <Project Path="gradient.vcxproj" Id="90fb67d6-6243-451c-8347-4da948a773a9" />
 </Solution>
