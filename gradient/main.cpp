@@ -1,14 +1,15 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 class Image {
 public:
-	Image(const size_t& dimX, const size_t& dimY) : pixelX_(dimX), pixelY_(dimY) {}
+	Image(const size_t& dimX, const size_t& dimY) : pixelX_(dimX), pixelY_(dimY), matrix_(dimY) {}
 
 	std::vector<std::vector<uint8_t>> setRow(const size_t& index, const std::vector<uint8_t>& row) {
 		if (index >= pixelY_) throw std::out_of_range("Index out of Y pixel range.");
-		if (row.size() >= pixelX_) throw std::out_of_range("Index out of X pixel range.");
+		if (row.size() > pixelX_) throw std::out_of_range("Index out of X pixel range.");
 		matrix_[index] = row;
 
 		return matrix_;
@@ -22,7 +23,7 @@ public:
 
 	std::vector<std::vector<uint8_t>> setColumn(const size_t& index, const std::vector<uint8_t>& col) {
 		if (index >= pixelX_) throw std::out_of_range("Index out of X pixel range.");
-		if (col.size() >= pixelY_) throw std::out_of_range("Index out of Y pixel range.");
+		if (col.size() > pixelY_) throw std::out_of_range("Index out of Y pixel range.");
 		for (uint8_t i = 0; i < col.size(); i++) {
 			matrix_[i][index] = col[i];
 		}
@@ -47,7 +48,20 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+	std::string o_filename = argv[1];
+	std::ofstream os(o_filename/*, std::ios::binary*/);
+	if (!os) {
+		std::cout << "Error opening '" << o_filename << "'." << std::endl;
+		return 1;
+	}
 
+	const size_t imageSize = 256;
+
+	Image graylevelImg(imageSize, imageSize);
+	for (size_t i = 0; i < imageSize; i++) {
+		std::vector<uint8_t> v(imageSize, static_cast<uint8_t>(i));
+		graylevelImg.setRow(i, v);
+	}
 
 	return 0;
 }
