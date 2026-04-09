@@ -6,31 +6,32 @@ class Image {
 public:
 	Image(const size_t& dimX, const size_t& dimY) : dimX_(dimX), dimY_(dimY) {}
 
-	void setRow(const size_t& index, const uint8_t& val) {
-		if (index >= dimY_) throw std::out_of_range("Index out of image range.");
-		for (auto& col : matrix_) {
-			col[index] = val;
-		}
+	std::vector<std::vector<uint8_t>> setRow(const size_t& index, const std::vector<uint8_t>& row) {
+		if (index >= dimY_) throw std::out_of_range("Index out of image Y range.");
+		if (row.size() >= dimX_) throw std::out_of_range("Index out of image X range.");
+		matrix_[index] = row;
+
+		return matrix_;
 	}
 
 	std::vector<uint8_t> getRow(const size_t& index) {
-		if (index >= dimY_) throw std::out_of_range("Index out of image range.");
-		std::vector<uint8_t> row;
-		for (auto& col : matrix_) {
-			row.push_back(col[index]);
-		}
+		if (index >= dimY_) throw std::out_of_range("Index out of image Y range.");
 		
-		return row;
+		return matrix_[index];
 	}
 
-	void setColumn(const size_t& index, const uint8_t& val) {
-		if (index >= dimX_) throw std::out_of_range("Index out of image range.");
-		std::vector<uint8_t> col(dimX_, val);
-		matrix_[index] = col;
+	std::vector<std::vector<uint8_t>> setColumn(const size_t& index, const std::vector<uint8_t>& col) {
+		if (index >= dimX_) throw std::out_of_range("Index out of image X range.");
+		if (col.size() >= dimY_) throw std::out_of_range("Index out of image Y range.");
+		for (uint8_t i = 0; i < col.size(); i++) {
+			matrix_[i][index] = col[i];
+		}
+
+		return matrix_;
 	}
 
 	std::vector<uint8_t> getColumn(const size_t& index) {
-		if (index >= dimX_) throw std::out_of_range("Index out of image range.");
+		if (index >= dimX_) throw std::out_of_range("Index out of image X range.");
 
 		return matrix_[index];
 	}
