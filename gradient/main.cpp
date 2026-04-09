@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <iterator>
 
 class Image {
 public:
@@ -36,6 +37,21 @@ public:
 
 		return matrix_[index];
 	}
+
+	std::ofstream& writePAM(std::ofstream& os) {
+		os << "P7" << std::endl;
+		os << "WIDTH " << pixelX_ << std::endl;
+		os << "HEIGHT " << pixelY_ << std::endl;
+		os << "DEPTH 1" << std::endl;
+		os << "MAXVAL 255" << std::endl;
+		os << "TUPLTYPE GRAYSCALE" << std::endl;
+		os << "ENDHDR" << std::endl;
+		for (const auto& row : matrix_) {
+			std::copy(row.begin(), row.end(), std::ostream_iterator<uint8_t>(os));
+		}
+
+		return os;
+	}
 private:
 	std::vector<std::vector<uint8_t>> matrix_;
 	size_t pixelX_;
@@ -49,7 +65,7 @@ int main(int argc, char** argv) {
 	}
 
 	std::string o_filename = argv[1];
-	std::ofstream os(o_filename/*, std::ios::binary*/);
+	std::ofstream os(o_filename, std::ios::binary);
 	if (!os) {
 		std::cout << "Error opening '" << o_filename << "'." << std::endl;
 		return 1;
@@ -62,6 +78,8 @@ int main(int argc, char** argv) {
 		std::vector<uint8_t> v(imageSize, static_cast<uint8_t>(i));
 		graylevelImg.setRow(i, v);
 	}
+
+	graylevelImg.writePAM(os);
 
 	return 0;
 }
