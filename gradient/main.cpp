@@ -5,7 +5,7 @@
 
 class Image {
 public:
-	Image(const size_t& dimX, const size_t& dimY) : pixelX_(dimX), pixelY_(dimY), matrix_(dimY) {}
+	Image(const size_t& pixelX, const size_t& pixelY) : pixelX_(pixelX), pixelY_(pixelY), matrix_(pixelY) {}
 
 	std::vector<std::vector<uint8_t>> setRow(const size_t& index, const std::vector<uint8_t>& row) {
 		if (index >= pixelY_) throw std::out_of_range("Index out of Y pixel range.");
