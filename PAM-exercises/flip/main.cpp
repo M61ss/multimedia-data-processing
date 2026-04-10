@@ -4,9 +4,9 @@
 #include <vector>
 #include <iterator>
 
-class Image {
+class GrayscaleImage {
 public:
-	Image(std::ifstream& is) : pixelX_(0), pixelY_(0), header("") {
+	GrayscaleImage(std::ifstream& is) : pixelX_(0), pixelY_(0), header("") {
 		readHeader(is);
 		readImage(is);
 	}
@@ -86,9 +86,9 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	Image grayScaleImg(is);
-	grayScaleImg.flip();
-	grayScaleImg.writePam(os);
+	GrayscaleImage grayscaleImg(is);
+	grayscaleImg.flip();
+	grayscaleImg.writePam(os);
 
 	return 0;
 }
