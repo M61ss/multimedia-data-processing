@@ -4,14 +4,14 @@
 #include <vector>
 #include <iterator>
 
-class GrayscaleImage {
+class GrayscalePamImage {
 public:
-	GrayscaleImage(std::ifstream& is) : pixelX_(0), pixelY_(0), header("") {
+	GrayscalePamImage(std::ifstream& is) : pixelX_(0), pixelY_(0), header("") {
 		readHeader(is);
 		readImage(is);
 	}
 
-	std::vector<std::vector<uint8_t>>& flip() {
+	const std::vector<std::vector<uint8_t>>& flip() {
 		for (size_t i = 0; i < pixelY_ / 2; i++) {
 			matrix_[i].swap(matrix_[pixelY_ - 1 - i]);
 		}
@@ -19,7 +19,7 @@ public:
 		return matrix_;
 	}
 
-	std::ofstream& writePam(std::ofstream& os) {
+	std::ofstream& print(std::ofstream& os) {
 		os << header;
 		for (const auto& row : matrix_) {
 			std::copy(row.begin(), row.end(), std::ostream_iterator<uint8_t>(os));
@@ -86,9 +86,9 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	GrayscaleImage grayscaleImg(is);
-	grayscaleImg.flip();
-	grayscaleImg.writePam(os);
+	GrayscalePamImage grayscalePamImg(is);
+	grayscalePamImg.flip();
+	grayscalePamImg.print(os);
 
 	return 0;
 }
