@@ -56,9 +56,7 @@ private:
 	void readImage(std::ifstream& is) {
 		for (size_t i = 0; i < pixelY_; i++) {
 			matrix_.push_back(std::vector<uint8_t>(pixelX_));
-			for (size_t j = 0; j < pixelX_; j++) {
-				is.read(reinterpret_cast<char*>(&matrix_[i][j]), sizeof(uint8_t));
-			}
+			is.read(reinterpret_cast<char*>(matrix_[i].data()), sizeof(uint8_t) * pixelX_);
 		}
 	}
 
