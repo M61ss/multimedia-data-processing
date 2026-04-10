@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="flip.vcxproj" Id="90bc9aee-1a7e-48d3-acf4-8be77121fc07" />
+</Solution>
