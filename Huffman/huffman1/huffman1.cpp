@@ -3,7 +3,6 @@
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <bit>
 
 
 class BitReader {
@@ -57,14 +56,47 @@ struct SymbolRepresentation {
 
 class HuffmanEncoder {
 public:
-	HuffmanEncoder(std::ifstream& is, std::ofstream& os) : is_(is), os_(os) {}
+	HuffmanEncoder(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), tableEntries_(0), numSymbols_(0) {}
 
 	void compress() {
-
+		getFileLength();
+		std::map<uint8_t, size_t> frequencies = computeFrequencies();
+		createHuffmanTable(frequencies);
 	}
 private:
+	void getFileLength() {
+		is_.seekg(0, std::ios::end);
+		numSymbols_ = is_.tellg();
+		is_.seekg(0, std::ios::beg);
+	}
+
+	std::map<uint8_t, size_t> computeFrequencies() {
+		std::map<uint8_t, size_t> frequencies;
+		uint8_t item = 0;
+		while (is_.read(reinterpret_cast<char*>(item), sizeof(uint8_t))) {
+			++frequencies[item];
+		}
+		for (auto& [k, v] : frequencies) {
+			v /= numSymbols_;
+		}
+
+		return frequencies;
+	}
+
+	void createHuffmanTable(const std::map<uint8_t, size_t>& frequencies) {
+
+	}
+
+	void write() {
+		os_ << "HUFFMAN1";
+		uint8_t tableEntries = (tableEntries_ == 256) ? 0 : static_cast<uint8_t>(tableEntries_);
+		os_.write(reinterpret_cast<const char*>(tableEntries), sizeof(uint8_t));
+	}
+
 	std::ifstream& is_;
 	std::ofstream& os_;
+	uint16_t tableEntries_;
+	uint32_t numSymbols_;
 };
 
 
