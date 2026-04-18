@@ -3,6 +3,37 @@
 #include <vector>
 
 
+class BitReader {
+public:
+	BitReader(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), buffer_(0), n_(0) {}
+
+	std::ifstream& readSequence(size_t& output, size_t sequenceLength) {
+		for (size_t i = 0; i < sequenceLength; i++) {
+			output = (output << 1) | readBit();
+		}
+	}
+private:
+	uint8_t readBit() {
+		if (n_ == 0) {
+			is_.read(reinterpret_cast<char*>(buffer_), sizeof(uint8_t));
+			n_ = 8;
+		}
+		--n_;
+		return (buffer_ >> n_) & 1;
+	}
+
+	std::ifstream& is_;
+	std::ofstream& os_;
+	uint8_t buffer_;
+	uint8_t n_;
+};
+
+
+class BitWriter {
+
+};
+
+
 class HuffmanEncoder {
 public:
 	HuffmanEncoder(std::ifstream& is, std::ofstream& os) : is_(is), os_(os) {}
@@ -18,14 +49,23 @@ private:
 
 class HuffmanDecoder {
 public:
-	HuffmanDecoder(std::ifstream& is, std::ofstream& os) : is_(is), os_(os) {}
+	HuffmanDecoder(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), nTableItems_(0), magicNumber_("") {}
 
-	void decompress() {
+	std::ifstream& decompress() {
+		is_.read(magicNumber_, 8 * sizeof(char));
+		is_.read(reinterpret_cast<char*>(nTableItems_), sizeof(uint8_t));
 
+		return is_;
 	}
 private:
+	std::ifstream& readTable() {
+
+	}
+
 	std::ifstream& is_;
 	std::ofstream& os_;
+	char magicNumber_[8];
+	uint8_t nTableItems_;
 };
 
 
