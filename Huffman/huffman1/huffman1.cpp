@@ -7,8 +7,8 @@ class BitReader {
 public:
 	BitReader(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), buffer_(0), n_(0) {}
 
-	std::ifstream& readSequence(size_t& output, size_t sequenceLength) {
-		for (size_t i = 0; i < sequenceLength; i++) {
+	std::ifstream& readSequence(size_t& output, const size_t& len) {
+		for (size_t i = 0; i < len; i++) {
 			output = (output << 1) | readBit();
 		}
 	}
@@ -30,7 +30,17 @@ private:
 
 
 class BitWriter {
+public:
+	BitWriter(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), buffer_(0), n_(0) {}
 
+	std::ofstream& writeSequence(const size_t& input, const size_t& len) {
+		
+	}
+private:
+	std::ifstream& is_;
+	std::ofstream& os_;
+	uint8_t buffer_;
+	uint8_t n_;
 };
 
 
