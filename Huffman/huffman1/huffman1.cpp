@@ -54,13 +54,20 @@ struct SymbolRepresentation {
 };
 
 
+struct Node {
+	uint32_t frequency;
+	Node* left;
+	Node* right;
+};
+
+
 class HuffmanEncoder {
 public:
 	HuffmanEncoder(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), tableEntries_(0), numSymbols_(0) {}
 
 	void compress() {
 		getFileLength();
-		std::map<uint8_t, size_t> frequencies = computeFrequencies();
+		std::map<uint8_t, size_t> frequencies = computeOccurrencies();
 		createHuffmanTable(frequencies);
 	}
 private:
@@ -70,21 +77,19 @@ private:
 		is_.seekg(0, std::ios::beg);
 	}
 
-	std::map<uint8_t, size_t> computeFrequencies() {
-		std::map<uint8_t, size_t> frequencies;
+	std::map<uint8_t, size_t> computeOccurrencies() {
+		std::map<uint8_t, size_t> occurrencies;
 		uint8_t item = 0;
 		while (is_.read(reinterpret_cast<char*>(item), sizeof(uint8_t))) {
-			++frequencies[item];
+			++occurrencies[item];
 		}
-		for (auto& [k, v] : frequencies) {
-			v /= numSymbols_;
-		}
+		is_.seekg(0, std::ios::beg);
 
-		return frequencies;
+		return occurrencies;
 	}
 
 	void createHuffmanTable(const std::map<uint8_t, size_t>& frequencies) {
-
+		 
 	}
 
 	void write() {
