@@ -56,7 +56,7 @@ private:
 	}
 
 	void flush() {
-		while (n_ > 1) {
+		while (n_ > 0) {
 			writeBit(0);
 		}
 	}
@@ -110,6 +110,7 @@ private:
 		uint8_t item = 0;
 		while (is_.read(reinterpret_cast<char*>(&item), sizeof(uint8_t))) {
 			++occurrencies[item];
+			data_.push_back(item);
 		}
 		is_.seekg(0, std::ios::beg);
 
@@ -175,9 +176,8 @@ private:
 
 		bw.writeSequence(numSymbols_, 32);
 
-		uint8_t sym;
-		while (is_.read(reinterpret_cast<char*>(&sym), sizeof(uint8_t))) {
-			const auto& [code, len] = huffmanTable_[sym];
+		for (const auto& sym : data_) {
+			const auto& [len, code] = huffmanTable_[sym];
 			bw.writeSequence(code, len);
 		}
 	}
@@ -187,6 +187,7 @@ private:
 	uint16_t tableEntries_;
 	uint32_t numSymbols_;
 	std::map<uint8_t, std::pair<uint8_t, uint16_t>> huffmanTable_;
+	std::vector<uint8_t> data_;
 };
 
 
