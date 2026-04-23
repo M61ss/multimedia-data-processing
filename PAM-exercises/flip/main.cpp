@@ -15,7 +15,7 @@ struct Header {
 
 class GrayscalePamImage {
 public:
-	GrayscalePamImage(std::ifstream& is) : rows_(-1), cols_(-1), hdr_() {
+	GrayscalePamImage(std::ifstream& is) : rows_(-1), cols_(-1), hdr_({}) {
 		readHeader(is);
 		rows_ = hdr_.width_;
 		cols_ = hdr_.height_;
