@@ -39,13 +39,13 @@ public:
 	}
 
 	std::ofstream& writePAM(std::ofstream& os) {
-		os << "P7" << std::endl;
-		os << "WIDTH " << rows_ << std::endl;
-		os << "HEIGHT " << cols_ << std::endl;
-		os << "DEPTH 1" << std::endl;
-		os << "MAXVAL 255" << std::endl;
-		os << "TUPLTYPE GRAYSCALE" << std::endl;
-		os << "ENDHDR" << std::endl;
+		os << "P7" << std::endl
+			<< "WIDTH " << rows_ << std::endl
+			<< "HEIGHT " << cols_ << std::endl
+			<< "DEPTH 1" << std::endl
+			<< "MAXVAL 255" << std::endl
+			<< "TUPLTYPE GRAYSCALE" << std::endl
+			<< "ENDHDR" << std::endl;
 		for (const auto& row : matrix_) {
 			std::copy(row.begin(), row.end(), std::ostream_iterator<uint8_t>(os));
 		}
