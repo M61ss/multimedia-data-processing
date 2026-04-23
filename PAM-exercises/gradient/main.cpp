@@ -6,25 +6,25 @@
 
 class Image {
 public:
-	Image(const size_t& pixelX, const size_t& pixelY) : pixelX_(pixelX), pixelY_(pixelY), matrix_(pixelY) {}
+	Image(const size_t& rows, const size_t& cols) : rows_(rows), cols_(cols), matrix_(cols) {}
 
 	std::vector<std::vector<uint8_t>> setRow(const size_t& index, const std::vector<uint8_t>& row) {
-		if (index >= pixelY_) throw std::out_of_range("Index out of Y pixel range.");
-		if (row.size() > pixelX_) throw std::out_of_range("Index out of X pixel range.");
+		if (index >= cols_) throw std::out_of_range("Index out of Y pixel range.");
+		if (row.size() > rows_) throw std::out_of_range("Index out of X pixel range.");
 		matrix_[index] = row;
 
 		return matrix_;
 	}
 
 	std::vector<uint8_t> getRow(const size_t& index) {
-		if (index >= pixelY_) throw std::out_of_range("Index out of Y pixel range.");
+		if (index >= cols_) throw std::out_of_range("Index out of Y pixel range.");
 		
 		return matrix_[index];
 	}
 
 	std::vector<std::vector<uint8_t>> setColumn(const size_t& index, const std::vector<uint8_t>& col) {
-		if (index >= pixelX_) throw std::out_of_range("Index out of X pixel range.");
-		if (col.size() > pixelY_) throw std::out_of_range("Index out of Y pixel range.");
+		if (index >= rows_) throw std::out_of_range("Index out of X pixel range.");
+		if (col.size() > cols_) throw std::out_of_range("Index out of Y pixel range.");
 		for (uint8_t i = 0; i < col.size(); i++) {
 			matrix_[i][index] = col[i];
 		}
@@ -33,15 +33,15 @@ public:
 	}
 
 	std::vector<uint8_t> getColumn(const size_t& index) {
-		if (index >= pixelX_) throw std::out_of_range("Index out of X pixel range.");
+		if (index >= rows_) throw std::out_of_range("Index out of X pixel range.");
 
 		return matrix_[index];
 	}
 
 	std::ofstream& writePAM(std::ofstream& os) {
 		os << "P7" << std::endl;
-		os << "WIDTH " << pixelX_ << std::endl;
-		os << "HEIGHT " << pixelY_ << std::endl;
+		os << "WIDTH " << rows_ << std::endl;
+		os << "HEIGHT " << cols_ << std::endl;
 		os << "DEPTH 1" << std::endl;
 		os << "MAXVAL 255" << std::endl;
 		os << "TUPLTYPE GRAYSCALE" << std::endl;
@@ -54,8 +54,8 @@ public:
 	}
 private:
 	std::vector<std::vector<uint8_t>> matrix_;
-	size_t pixelX_;
-	size_t pixelY_;
+	size_t rows_;
+	size_t cols_;
 };
 
 int main(int argc, char** argv) {
