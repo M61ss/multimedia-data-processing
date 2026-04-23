@@ -3,11 +3,22 @@
 #include <string>
 #include <vector>
 #include <iterator>
+#include <sstream>
+
+struct Header {
+	size_t width_;
+	size_t height_;
+	size_t depth_;
+	size_t maxval_;
+	std::string tupltype_;
+};
 
 class GrayscalePamImage {
 public:
-	GrayscalePamImage(std::ifstream& is) : rows_(0), cols_(0), header("") {
+	GrayscalePamImage(std::ifstream& is) : rows_(-1), cols_(-1), hdr_() {
 		readHeader(is);
+		rows_ = hdr_.width_;
+		cols_ = hdr_.height_;
 		readImage(is);
 	}
 
@@ -20,7 +31,13 @@ public:
 	}
 
 	std::ofstream& print(std::ofstream& os) {
-		os << header;
+		os << "P7" << std::endl
+			<< "WIDTH " << hdr_.width_ << std::endl
+			<< "HEIGHT " << hdr_.height_ << std::endl
+			<< "DEPTH " << hdr_.depth_ << std::endl
+			<< "MAXVAL " << hdr_.maxval_ << std::endl
+			<< "TUPLTYPE " << hdr_.tupltype_ << std::endl
+			<< "ENDHDR" << std::endl;
 		for (const auto& row : matrix_) {
 			std::copy(row.begin(), row.end(), std::ostream_iterator<uint8_t>(os));
 		}
@@ -30,27 +47,40 @@ public:
 
 private:
 	void readHeader(std::ifstream& is) {
-		std::string headerField;
-		is >> headerField;
-		header.append(headerField + "\n");
-		while (true) { 
-			is >> headerField;
-			header.append(headerField);
-			if (headerField == "ENDHDR") break;
-
-			std::string fieldValue;
-			is >> fieldValue;
-			header.append(" " + fieldValue + "\n");
-			if (headerField == "WIDTH") {
-				rows_ = static_cast<size_t>(std::stoi(fieldValue));
+		std::string token;
+		is >> token;
+		if (token != "P7") {
+			return;
+		}
+		std::string line;
+		while (std::getline(is, line)) { 
+			if (line[0] == '#') {
+				continue;
 			}
-			else if (headerField == "HEIGHT") {
-				cols_ = static_cast<size_t>(std::stoi(fieldValue));
+			std::stringstream ss(line);
+			
+			ss >> token;
+			if (token == "ENDHDR") {
+				break;
+			}
+			std::string value;
+			ss >> value;
+			if (token == "WIDTH") {
+				hdr_.width_ = static_cast<size_t>(std::stoi(value));
+			}
+			else if (token == "HEIGHT") {
+				hdr_.height_ = static_cast<size_t>(std::stoi(value));
+			}
+			else if (token == "DEPTH") {
+				hdr_.depth_ = static_cast<size_t>(std::stoi(value));
+			}
+			else if (token == "MAXVAL") {
+				hdr_.maxval_ = static_cast<size_t>(std::stoi(value));
+			}
+			else if (token == "TUPLTYPE") {
+				hdr_.tupltype_ = value;
 			}
 		}
-		char newLine;
-		is.read(&newLine, sizeof(char));
-		header.append("\n");
 	}
 
 	void readImage(std::ifstream& is) {
@@ -63,7 +93,7 @@ private:
 	size_t rows_;
 	size_t cols_;
 	std::vector<std::vector<uint8_t>> matrix_;
-	std::string header;
+	Header hdr_;
 };
 
 int main(int argc, char** argv) {
