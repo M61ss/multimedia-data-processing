@@ -41,12 +41,13 @@ public:
 
 	void writeSequence(const size_t& input, const size_t& len) {
 		for (int i = static_cast<int>(len) - 1; i >= 0; i--) {
-			writeBit((input >> i) & 1);
+			uint8_t bit = (input >> i) & 1;
+			writeBit(bit);
 		}
 	}
 private:
 	void writeBit(uint8_t bit) {
-		buffer_ = (buffer_ << 1) & bit;
+		buffer_ = (buffer_ << 1) | bit;
 		++n_;
 		if (n_ == 8) {
 			os_.write(reinterpret_cast<const char*>(&buffer_), sizeof(uint8_t));
@@ -92,6 +93,7 @@ public:
 	void compress() {
 		getFileLength();
 		std::map<uint8_t, size_t> frequencies = computeOccurrencies();
+		tableEntries_ = static_cast<uint16_t>(frequencies.size());
 		Node* root = createTree(frequencies);
 		createHuffmanTable(root, 0, 0);
 		write();
@@ -99,7 +101,7 @@ public:
 private:
 	void getFileLength() {
 		is_.seekg(0, std::ios::end);
-		numSymbols_ = is_.tellg();
+		numSymbols_ = static_cast<uint32_t>(is_.tellg());
 		is_.seekg(0, std::ios::beg);
 	}
 
@@ -117,7 +119,7 @@ private:
 	Node* createTree(const std::map<uint8_t, size_t>& frequencies) {
 		std::vector<Node*> nodes;
 		for (const auto& [k, v] : frequencies) {
-			Node* node = new Node(k, v);
+			Node* node = new Node(k, static_cast<uint32_t>(v));
 			nodes.push_back(node);
 		}
 		std::sort(nodes.begin(), nodes.end(),
@@ -165,7 +167,7 @@ private:
 
 		BitWriter bw(os_);
 		for (const auto& [sym, info] : huffmanTable_) {
-			const auto& [code, len] = info;
+			const auto& [len, code] = info;
 			bw.writeSequence(sym, 8);
 			bw.writeSequence(len, 5);
 			bw.writeSequence(code, len);
