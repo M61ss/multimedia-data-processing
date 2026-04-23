@@ -7,7 +7,7 @@
 
 class BitReader {
 public:
-	BitReader(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), buffer_(0), n_(0) {}
+	BitReader(std::ifstream& is) : is_(is), buffer_(0), n_(0) {}
 
 	size_t readSequence(size_t& output, const size_t& len) {
 		for (size_t i = 0; i < len; i++) {
@@ -27,7 +27,6 @@ private:
 	}
 
 	std::ifstream& is_;
-	std::ofstream& os_;
 	uint8_t buffer_;
 	uint8_t n_;
 };
@@ -35,13 +34,32 @@ private:
 
 class BitWriter {
 public:
-	BitWriter(std::ifstream& is, std::ofstream& os) : is_(is), os_(os), buffer_(0), n_(0) {}
+	BitWriter(std::ofstream& os) : os_(os), buffer_(0), n_(0) {}
+	~BitWriter() {
+		flush();
+	}
 
 	void writeSequence(const size_t& input, const size_t& len) {
-		
+		for (int i = static_cast<int>(len) - 1; i >= 0; i--) {
+			writeBit((input >> i) & 1);
+		}
 	}
 private:
-	std::ifstream& is_;
+	void writeBit(uint8_t bit) {
+		buffer_ = (buffer_ << 1) & bit;
+		++n_;
+		if (n_ == 8) {
+			os_.write(reinterpret_cast<const char*>(&buffer_), sizeof(uint8_t));
+			n_ = 0;
+		}
+	}
+
+	void flush() {
+		while (n_ > 1) {
+			writeBit(0);
+		}
+	}
+
 	std::ofstream& os_;
 	uint8_t buffer_;
 	uint8_t n_;
@@ -55,9 +73,15 @@ struct SymbolRepresentation {
 
 
 struct Node {
-	uint32_t frequency;
-	Node* left;
-	Node* right;
+	uint8_t symbol_ = 0;
+	uint32_t frequency_;
+	Node* left_ = nullptr;
+	Node* right_ = nullptr;
+
+	Node(uint8_t sym, uint32_t frequency) 
+		: symbol_(sym), frequency_(frequency) {}
+	Node(Node* left, Node* right) 
+		: left_(left), right_(right), frequency_(left->frequency_ + right->frequency_) {}
 };
 
 
@@ -68,7 +92,9 @@ public:
 	void compress() {
 		getFileLength();
 		std::map<uint8_t, size_t> frequencies = computeOccurrencies();
-		createHuffmanTable(frequencies);
+		Node* root = createTree(frequencies);
+		createHuffmanTable(root, 0, 0);
+		write();
 	}
 private:
 	void getFileLength() {
@@ -80,7 +106,7 @@ private:
 	std::map<uint8_t, size_t> computeOccurrencies() {
 		std::map<uint8_t, size_t> occurrencies;
 		uint8_t item = 0;
-		while (is_.read(reinterpret_cast<char*>(item), sizeof(uint8_t))) {
+		while (is_.read(reinterpret_cast<char*>(&item), sizeof(uint8_t))) {
 			++occurrencies[item];
 		}
 		is_.seekg(0, std::ios::beg);
@@ -88,27 +114,84 @@ private:
 		return occurrencies;
 	}
 
-	void createHuffmanTable(const std::map<uint8_t, size_t>& frequencies) {
-		 
+	Node* createTree(const std::map<uint8_t, size_t>& frequencies) {
+		std::vector<Node*> nodes;
+		for (const auto& [k, v] : frequencies) {
+			Node* node = new Node(k, v);
+			nodes.push_back(node);
+		}
+		std::sort(nodes.begin(), nodes.end(),
+			[](Node* a, Node* b) {
+				return a->frequency_ > b->frequency_;
+			});
+
+		while (nodes.size() > 1) {
+			Node* left = nodes.back();
+			nodes.pop_back();
+			Node* right = nodes.back();
+			nodes.pop_back();
+
+			Node* sum = new Node(left, right);
+
+			auto it = nodes.begin();
+			for (size_t i = 0; i < nodes.size(); i++) {
+				if (nodes[i]->frequency_ <= sum->frequency_) {
+					break;
+				}
+				++it;
+			}
+			nodes.insert(it, sum);
+		}
+		Node* root = nodes.back();
+		
+		return root;
+	}
+
+	void createHuffmanTable(Node* root, uint16_t code, uint8_t len) {
+		if (root->left_ == nullptr) {
+			huffmanTable_[root->symbol_] = std::make_pair(len, code);
+		}
+		else {
+			createHuffmanTable(root->left_, code << 1, len + 1);
+			createHuffmanTable(root->right_, (code << 1) | 1, len + 1);
+		}
 	}
 
 	void write() {
 		os_ << "HUFFMAN1";
+
 		uint8_t tableEntries = (tableEntries_ == 256) ? 0 : static_cast<uint8_t>(tableEntries_);
-		os_.write(reinterpret_cast<const char*>(tableEntries), sizeof(uint8_t));
+		os_.write(reinterpret_cast<const char*>(&tableEntries), sizeof(uint8_t));
+
+		BitWriter bw(os_);
+		for (const auto& [sym, info] : huffmanTable_) {
+			const auto& [code, len] = info;
+			bw.writeSequence(sym, 8);
+			bw.writeSequence(len, 5);
+			bw.writeSequence(code, len);
+		}
+
+		bw.writeSequence(numSymbols_, 32);
+
+		uint8_t sym;
+		while (is_.read(reinterpret_cast<char*>(&sym), sizeof(uint8_t))) {
+			const auto& [code, len] = huffmanTable_[sym];
+			bw.writeSequence(code, len);
+		}
 	}
 
 	std::ifstream& is_;
 	std::ofstream& os_;
 	uint16_t tableEntries_;
 	uint32_t numSymbols_;
+	std::map<uint8_t, std::pair<uint8_t, uint16_t>> huffmanTable_;
 };
 
 
 class HuffmanDecoder {
 public:
-	HuffmanDecoder(std::ifstream& is, std::ofstream& os) : 
-		is_(is), os_(os), br(is, os), magicNumber_(""), tableEntries_(0), huffmanTable_(), numSymbols_(0), data_() {}
+	HuffmanDecoder(std::ifstream& is, std::ofstream& os) 
+		: is_(is), os_(os), br(is), magicNumber_(""), tableEntries_(0), huffmanTable_(), numSymbols_(0), data_() {}
 
 	void decompress() {
 		readMagicNumber();
@@ -135,7 +218,15 @@ private:
 			br.readSequence(sym, 8);
 			br.readSequence(len, 5);
 			br.readSequence(code, len);
-			huffmanTable_.push_back(std::pair<uint8_t, SymbolRepresentation>(static_cast<uint8_t>(sym), { static_cast<uint8_t>(len), static_cast<uint16_t>(code) }));
+			huffmanTable_.push_back(
+				std::pair<uint8_t, SymbolRepresentation>(
+					static_cast<uint8_t>(sym), 
+					{ 
+						static_cast<uint8_t>(len), 
+						static_cast<uint16_t>(code) 
+					}
+				)
+			);
 		}
 		std::sort(huffmanTable_.begin(), huffmanTable_.end(),
 			[](std::pair<uint8_t, SymbolRepresentation>& a, std::pair<uint8_t, SymbolRepresentation>& b) {
