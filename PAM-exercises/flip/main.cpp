@@ -6,14 +6,14 @@
 
 class GrayscalePamImage {
 public:
-	GrayscalePamImage(std::ifstream& is) : pixelX_(0), pixelY_(0), header("") {
+	GrayscalePamImage(std::ifstream& is) : rows_(0), cols_(0), header("") {
 		readHeader(is);
 		readImage(is);
 	}
 
 	const std::vector<std::vector<uint8_t>>& flip() {
-		for (size_t i = 0; i < pixelY_ / 2; i++) {
-			matrix_[i].swap(matrix_[pixelY_ - 1 - i]);
+		for (size_t i = 0; i < cols_ / 2; i++) {
+			matrix_[i].swap(matrix_[cols_ - 1 - i]);
 		}
 
 		return matrix_;
@@ -42,10 +42,10 @@ private:
 			is >> fieldValue;
 			header.append(" " + fieldValue + "\n");
 			if (headerField == "WIDTH") {
-				pixelX_ = static_cast<size_t>(std::stoi(fieldValue));
+				rows_ = static_cast<size_t>(std::stoi(fieldValue));
 			}
 			else if (headerField == "HEIGHT") {
-				pixelY_ = static_cast<size_t>(std::stoi(fieldValue));
+				cols_ = static_cast<size_t>(std::stoi(fieldValue));
 			}
 		}
 		char newLine;
@@ -54,14 +54,14 @@ private:
 	}
 
 	void readImage(std::ifstream& is) {
-		for (size_t i = 0; i < pixelY_; i++) {
-			matrix_.push_back(std::vector<uint8_t>(pixelX_));
-			is.read(reinterpret_cast<char*>(matrix_[i].data()), sizeof(uint8_t) * pixelX_);
+		for (size_t i = 0; i < cols_; i++) {
+			matrix_.push_back(std::vector<uint8_t>(rows_));
+			is.read(reinterpret_cast<char*>(matrix_[i].data()), sizeof(uint8_t) * rows_);
 		}
 	}
 
-	size_t pixelX_;
-	size_t pixelY_;
+	size_t rows_;
+	size_t cols_;
 	std::vector<std::vector<uint8_t>> matrix_;
 	std::string header;
 };
