@@ -48,6 +48,9 @@ public:
 		readHuffmanTable();
 		readNumSymbols(); 
 		readData();
+		for (const auto& x : data_) {
+			os_.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
+		}
 	}
 
 	void readHeader() {
@@ -81,8 +84,9 @@ public:
 			uint8_t alreadyRead = 0;
 			for (const auto& [len, repr] : huffmanTable_) {
 				const auto& [sym, code] = repr;
-				buffer = br_.readSequence(len - alreadyRead);
-				alreadyRead = len - alreadyRead;
+				uint8_t toBeRead = len - alreadyRead;
+				buffer = (buffer << toBeRead) | br_.readSequence(toBeRead);
+				alreadyRead += toBeRead;
 				if (buffer == code) {
 					data_.push_back(sym);
 					break;
