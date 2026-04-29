@@ -1,6 +1,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 class BitReader {
 private:
@@ -97,6 +98,77 @@ public:
 		for (const auto& x : data_) {
 			os_.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
 		}
+	}
+};
+
+struct Node {
+	uint8_t sym_ = 0;
+	size_t count_;
+	Node* left_ = nullptr;
+	Node* right_ = nullptr;
+
+	Node(Node* left, Node* right) 
+		: left_(left), right_(right), count_(left->count_ + right->count_) {}
+
+	Node(const uint8_t& sym, const size_t& count) 
+		: sym_(sym), count_(count) {}
+};
+
+class HuffmanEncoder {
+private:
+	std::ifstream& is_;
+	std::ofstream& os_;
+	std::string magicNumber_;
+	size_t tableEntries_;
+	std::map<uint8_t, std::pair<uint8_t, size_t>> huffmanTable_;	// sym : (len, code)
+	size_t numSymbols_;
+	std::vector<uint8_t> data_;
+
+public:
+	HuffmanEncoder(std::ifstream& is, std::ofstream& os, const std::string& magicNumber = "HUFFMAN1") 
+		: is_(is), os_(os), magicNumber_(magicNumber), tableEntries_(0), huffmanTable_(), numSymbols_(0), data_() {}
+
+	void compress() {
+		std::map<uint8_t, size_t> frequencies = computeFrequencies();
+		createHuffmanTable(frequencies);
+	}
+
+	std::map<uint8_t, size_t>& computeFrequencies() {
+		uint8_t sym;
+		std::map<uint8_t, size_t> frequencies;
+		while (is_.read(reinterpret_cast<char*>(&sym), sizeof(uint8_t))) {
+			++frequencies[sym];
+		}
+		return frequencies;
+	}
+
+	void createHuffmanTable(const std::map<uint8_t, size_t>& frequencies) {
+		Node* root = createHuffmanTree(frequencies);
+	}
+
+	Node* createHuffmanTree(const std::map<uint8_t, size_t>& frequencies) {
+		std::vector<Node*> nodes;
+		for (const auto& [sym, frequency] : frequencies) {
+			nodes.emplace_back(Node(sym, frequency));
+		}
+
+		auto sortNodesPredicate = [](Node* a, Node* b) {
+			return a->count_ > b->count_;
+			};
+
+		std::sort(nodes.begin(), nodes.end(), sortNodesPredicate);
+
+		while (nodes.size() > 1) {
+			Node* left = nodes.back();
+			nodes.pop_back();
+			Node* right = nodes.back();
+			nodes.pop_back();
+
+			nodes.emplace_back(Node(left, right));
+			std::sort(nodes.begin(), nodes.end(), sortNodesPredicate);
+		}
+
+		return nodes.back();
 	}
 };
 
