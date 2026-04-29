@@ -48,9 +48,7 @@ public:
 		readHuffmanTable();
 		readNumSymbols(); 
 		readData();
-		for (const auto& x : data_) {
-			os_.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
-		}
+		printData();
 	}
 
 	void readHeader() {
@@ -92,6 +90,12 @@ public:
 					break;
 				}
 			}
+		}
+	}
+
+	void printData() {
+		for (const auto& x : data_) {
+			os_.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
 		}
 	}
 };
