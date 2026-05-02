@@ -20,9 +20,7 @@ public:
 	}
 	virtual uint8_t& operator()(const size_t& i, const size_t& j) {
 		return const_cast<uint8_t&>(
-			static_cast<const Matrix*>(
-				this)->operator()(i, j)
-			);
+			static_cast<const Matrix*>(this)->operator()(i, j));
 	}
 
 	const size_t& rows() const { return rows_; }
@@ -35,9 +33,6 @@ public:
 	size_t& cols() { return cols_; }
 	std::vector<uint8_t>& data() { return data_; }
 };
-
-using RGB = std::array<uint8_t, 3>;
-using Grayscale = std::uint8_t;
 
 class Image : public Matrix {
 private:
@@ -57,25 +52,15 @@ public:
 	}
 	uint8_t& operator()(const size_t& i, const size_t& j) override {
 		return const_cast<uint8_t&>(
-			static_cast<const Image*>(
-				this)->operator()(i, j)
-			);
+			static_cast<const Image*>(this)->operator()(i, j));
 	}
 
-	size_t depth() const { return depth_; }
-	std::string type() const { return type_; }
-};
+	size_t& depth() { return depth_; }
+	std::string& type() { return type_; }
 
-class GrayscaleImage : public Image {
-public:
-	GrayscaleImage(const size_t& width, const size_t& height) : Image(width, height, 1, "GRAYSCALE") {}
-};
-
-class RGBImage : public Image {
-public:
-	RGBImage(const size_t& width, const size_t& height) : Image(width, height, 3, "RGB") {}
-
-	const size_t size() const override { return data().size() / 3; }
+	const size_t& depth() const { return depth_; }
+	const std::string& type() const { return type_; }
+	const size_t size() const override { return data().size() / depth_; }
 };
 
 Image loadPAM(std::ifstream& is) {
