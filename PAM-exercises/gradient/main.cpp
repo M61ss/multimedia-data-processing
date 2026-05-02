@@ -1,85 +1,68 @@
 #include <fstream>
-#include <iostream>
 #include <vector>
 #include <fstream>
-#include <iterator>
+#include <cassert>
 
-class Image {
-public:
-	Image(const size_t& rows, const size_t& cols) : rows_(rows), cols_(cols), matrix_(cols) {}
-
-	std::vector<std::vector<uint8_t>> setRow(const size_t& index, const std::vector<uint8_t>& row) {
-		if (index >= cols_) throw std::out_of_range("Index out of Y pixel range.");
-		if (row.size() > rows_) throw std::out_of_range("Index out of X pixel range.");
-		matrix_[index] = row;
-
-		return matrix_;
-	}
-
-	std::vector<uint8_t> getRow(const size_t& index) {
-		if (index >= cols_) throw std::out_of_range("Index out of Y pixel range.");
-		
-		return matrix_[index];
-	}
-
-	std::vector<std::vector<uint8_t>> setColumn(const size_t& index, const std::vector<uint8_t>& col) {
-		if (index >= rows_) throw std::out_of_range("Index out of X pixel range.");
-		if (col.size() > cols_) throw std::out_of_range("Index out of Y pixel range.");
-		for (uint8_t i = 0; i < col.size(); i++) {
-			matrix_[i][index] = col[i];
-		}
-
-		return matrix_;
-	}
-
-	std::vector<uint8_t> getColumn(const size_t& index) {
-		if (index >= rows_) throw std::out_of_range("Index out of X pixel range.");
-
-		return matrix_[index];
-	}
-
-	std::ofstream& writePAM(std::ofstream& os) {
-		os << "P7" << std::endl
-			<< "WIDTH " << rows_ << std::endl
-			<< "HEIGHT " << cols_ << std::endl
-			<< "DEPTH 1" << std::endl
-			<< "MAXVAL 255" << std::endl
-			<< "TUPLTYPE GRAYSCALE" << std::endl
-			<< "ENDHDR" << std::endl;
-		for (const auto& row : matrix_) {
-			std::copy(row.begin(), row.end(), std::ostream_iterator<uint8_t>(os));
-		}
-
-		return os;
-	}
+class Matrix {
 private:
-	std::vector<std::vector<uint8_t>> matrix_;
+	std::vector<uint8_t> data_;
 	size_t rows_;
 	size_t cols_;
+
+public:
+	Matrix(const size_t& rows, const size_t& cols)
+		: rows_(rows), cols_(cols), data_(rows * cols) {}
+
+	uint8_t& operator()(const size_t& i, const size_t& j) {
+		assert(i < rows_ && i >= 0 && j < cols_ && j >= 0);
+		return data_[cols_ * i + j];
+	}
+	const uint8_t& operator()(const size_t& i, const size_t& j) const {
+		assert(i < rows_ && i >= 0 && j < cols_ && j >= 0);
+		return data_[cols_ * i + j];
+	}
+
+	auto rows() const { return rows_; }
+	auto cols() const { return cols_; }
+	auto size() const { return data_.size(); }
 };
+
+void writePAM(std::ofstream& os, const Matrix& img) {
+	os << "P7" << std::endl
+		<< "WIDTH " << img.rows() << std::endl
+		<< "HEIGHT " << img.cols() << std::endl
+		<< "DEPTH 1" << std::endl
+		<< "MAXVAL 255" << std::endl
+		<< "TUPLTYPE GRAYSCALE" << std::endl
+		<< "ENDHDR" << std::endl;
+	for (size_t i = 0; i < img.rows(); i++) {
+		for (size_t j = 0; j < img.cols(); j++) {
+			os.write(reinterpret_cast<const char*>(&img(i, j)), sizeof(uint8_t));
+		}
+	}
+}
 
 int main(int argc, char** argv) {
 	if (argc != 2) {
-		std::cout << "Wrong parameter number. Given " << argc - 1 << ", expected 1.";
 		return 1;
 	}
 
 	std::string o_filename = argv[1];
 	std::ofstream os(o_filename, std::ios::binary);
 	if (!os) {
-		std::cout << "Error opening '" << o_filename << "'." << std::endl;
 		return 1;
 	}
 
 	const size_t imageSize = 256;
 
-	Image graylevelImg(imageSize, imageSize);
-	for (size_t i = 0; i < imageSize; i++) {
-		std::vector<uint8_t> v(imageSize, static_cast<uint8_t>(i));
-		graylevelImg.setRow(i, v);
+	Matrix img(imageSize, imageSize);
+	for (size_t i = 0; i < img.rows(); i++) {
+		for (size_t j = 0; j < img.cols(); j++) {
+			img(i, j) = static_cast<uint8_t>(i);
+		}
 	}
 
-	graylevelImg.writePAM(os);
+	writePAM(os, img);
 
 	return 0;
 }
