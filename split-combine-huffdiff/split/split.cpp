@@ -25,11 +25,15 @@ public:
 			);
 	}
 
-	size_t rows() const { return rows_; }
-	size_t cols() const { return cols_; }
-	virtual size_t size() const { return data_.size(); }
-	size_t rawSize() const { return data_.size(); }
-	std::vector<uint8_t> data() const { return data_; }
+	const size_t& rows() const { return rows_; }
+	const size_t& cols() const { return cols_; }
+	virtual const size_t size() const { return data_.size(); }
+	const size_t& rawSize() const { return data_.size(); }
+	const std::vector<uint8_t>& data() const { return data_; }
+
+	size_t& rows() { return rows_; }
+	size_t& cols() { return cols_; }
+	std::vector<uint8_t>& data() { return data_; }
 };
 
 using RGB = std::array<uint8_t, 3>;
@@ -49,7 +53,7 @@ public:
 	const uint8_t& operator()(const size_t& i, const size_t& j) const override {
 		assert(i < rows() && i >= 0 && j < cols() && j >= 0);
 
-		return *reinterpret_cast<uint8_t*>(&data()[(cols() * i + j) * depth_]);
+		return *reinterpret_cast<const uint8_t*>(&data()[(cols() * i + j) * depth_]);
 	}
 	uint8_t& operator()(const size_t& i, const size_t& j) override {
 		return const_cast<uint8_t&>(
@@ -71,14 +75,14 @@ class RGBImage : public Image {
 public:
 	RGBImage(const size_t& width, const size_t& height) : Image(width, height, 3, "RGB") {}
 
-	size_t size() const override { return data().size() / 3; }
+	const size_t size() const override { return data().size() / 3; }
 };
 
 Image loadPAM(std::ifstream& is) {
 	std::string magicNumber = "";
 	size_t width = -1;
 	size_t height = -1;
-	uint8_t depth = -1;
+	size_t depth = -1;
 	std::string tupltype = "";
 	
 	is >> magicNumber;
@@ -118,6 +122,10 @@ Image loadPAM(std::ifstream& is) {
 	}
 
 	return img;
+}
+
+void writePAM(const Image& img) {
+
 }
 
 int main(int argc, char** argv) {
