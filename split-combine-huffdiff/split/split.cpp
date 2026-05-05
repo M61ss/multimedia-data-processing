@@ -72,8 +72,8 @@ public:
 	const uint8_t* operator()(const size_t& i, const size_t& j) const override {
 		assert(i >= 0 && i < rows() && j >= 0 && j < cols());
 		uint8_t pixel[3];
-		for (uint8_t i = 0; i < 3; i++) {
-			pixel[i] = data()[(i * cols() + j) * depth() + i];
+		for (uint8_t k = 0; k < 3; k++) {
+			pixel[k] = data()[(i * cols() + j) * depth() + k];
 		}
 
 		return pixel;
