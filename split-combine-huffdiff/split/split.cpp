@@ -80,7 +80,7 @@ public:
 	}
 	uint8_t* operator()(const size_t& i, const size_t& j) override {
 		return const_cast<uint8_t*>(
-			static_cast<const Image*>(this)->operator()(i, j));
+			static_cast<const RGBImage*>(this)->operator()(i, j));
 	}
 
 	std::vector<GrayscaleImage> split() const {
