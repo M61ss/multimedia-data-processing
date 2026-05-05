@@ -1,40 +1,35 @@
 #include <vector>
 #include <fstream>
-#include <sstream>
 #include <cassert>
+#include <sstream>
 
 class Matrix {
 private:
-	std::vector<uint8_t> data_;
+	std::vector <uint8_t> data_;
 	size_t rows_;
 	size_t cols_;
 
 public:
 	Matrix(const size_t& rows, const size_t& cols) 
-		: rows_(rows), cols_(cols), data_(rows * cols) {}
-
-	virtual const uint8_t& operator()(const size_t& i, const size_t& j) const {
-		assert(i < rows_ && i >= 0 && j < cols_ && j >= 0);
-
-		return data_[cols_ * i + j];
+		: rows_(rows), cols_(cols), data_(rows * cols) {
 	}
-	virtual uint8_t& operator()(const size_t& i, const size_t& j) {
-		return const_cast<uint8_t&>(
+
+	virtual const uint8_t* operator()(const size_t& i, const size_t& j) const {
+		assert(i >= 0 && i < rows_ && j >= 0 && j < cols_);
+
+		return &data_[i * cols_ + j];
+	}
+	virtual uint8_t* operator()(const size_t& i, const size_t& j) {
+		return const_cast<uint8_t*>(
 			static_cast<const Matrix*>(this)->operator()(i, j));
 	}
 
 	const size_t& rows() const { return rows_; }
 	const size_t& cols() const { return cols_; }
-	virtual const size_t size() const { return data_.size(); }
-	const size_t& rawSize() const { return data_.size(); }
 	const std::vector<uint8_t>& data() const { return data_; }
 
-	size_t& rows() { return rows_; }
-	size_t& cols() { return cols_; }
 	std::vector<uint8_t>& data() { return data_; }
 };
-
-using RGB = std::array<uint8_t, 3>;
 
 class Image : public Matrix {
 private:
@@ -47,31 +42,70 @@ public:
 		data().resize(width * height * depth);
 	}
 
-	const uint8_t& operator()(const size_t& i, const size_t& j) const override {
-		assert(i < rows() && i >= 0 && j < cols() && j >= 0);
+	const uint8_t* operator()(const size_t& i, const size_t& j) const override {
+		assert(i >= 0 && i < rows() && j >= 0 && j < cols());
 
-		return *reinterpret_cast<const uint8_t*>(&data()[(cols() * i + j) * depth_]);
+		return &data()[(i * cols() + j) * depth_];
 	}
-	uint8_t& operator()(const size_t& i, const size_t& j) override {
-		return const_cast<uint8_t&>(
+	uint8_t* operator()(const size_t& i, const size_t& j) override {
+		return const_cast<uint8_t*>(
 			static_cast<const Image*>(this)->operator()(i, j));
 	}
 
-	size_t& depth() { return depth_; }
-	std::string& type() { return type_; }
-
 	const size_t& depth() const { return depth_; }
 	const std::string& type() const { return type_; }
-	const size_t size() const override { return data().size() / depth_; }
+};
+
+class GrayscaleImage : public Image {
+public:
+	GrayscaleImage(const size_t& width, const size_t& height)
+		: Image(width, height, 1, "GRAYSCALE") {
+	}
+};
+
+class RGBImage : public Image {
+public:
+	RGBImage(const size_t& width, const size_t& height)
+		: Image(width, height, 3, "RGB") {
+	}
+
+	const uint8_t* operator()(const size_t& i, const size_t& j) const override {
+		assert(i >= 0 && i < rows() && j >= 0 && j < cols());
+		uint8_t pixel[3];
+		for (uint8_t i = 0; i < 3; i++) {
+			pixel[i] = data()[(i * cols() + j) * depth() + i];
+		}
+
+		return pixel;
+	}
+	uint8_t* operator()(const size_t& i, const size_t& j) override {
+		return const_cast<uint8_t*>(
+			static_cast<const Image*>(this)->operator()(i, j));
+	}
+
+	std::vector<GrayscaleImage> split() const {
+		std::vector<GrayscaleImage> channels;
+		for (size_t i = 0; i < this->depth(); i++) {
+			channels.push_back(GrayscaleImage(this->rows(), this->cols()));
+		}
+
+		for (size_t w = 0; w < this->rows(); w++) {
+			for (size_t h = 0; h < this->cols(); h++) {
+				for (size_t c = 0; c < this->depth(); c++) {
+					*(channels[c](w, h)) = this->operator()(w, h)[c];
+				}
+			}
+		}
+
+		return channels;
+	}
 };
 
 Image loadPAM(std::ifstream& is) {
-	std::string magicNumber = "";
-	size_t width = -1;
-	size_t height = -1;
-	size_t depth = -1;
-	std::string tupltype = "";
-	
+	std::string magicNumber;
+	size_t width, height, depth;
+	std::string type;
+
 	is >> magicNumber;
 
 	std::string line;
@@ -79,15 +113,11 @@ Image loadPAM(std::ifstream& is) {
 		std::stringstream ss(line);
 		std::string token;
 		ss >> token;
-
-		if (token == "#") {
-			continue;
-		}
+		
 		if (token == "ENDHDR") {
 			break;
 		}
-
-		if (token == "WIDTH") {
+		else if (token == "WIDTH") {
 			ss >> width;
 		}
 		else if (token == "HEIGHT") {
@@ -97,14 +127,14 @@ Image loadPAM(std::ifstream& is) {
 			ss >> depth;
 		}
 		else if (token == "TUPLTYPE") {
-			ss >> tupltype;
+			ss >> type;
 		}
 	}
-	Image img(width, height, depth, tupltype);
 
-	for (size_t i = 0; i < width; i++) {
-		for (size_t j = 0; j < height; j++) {
-			is.read(reinterpret_cast<char*>(&img(i, j)), img.depth());
+	Image img(width, height, depth, type);
+	for (size_t w = 0; w < img.rows(); w++) {
+		for (size_t h = 0; h < img.cols(); h++) {
+			is.read(reinterpret_cast<char*>(img(w, h)), depth);
 		}
 	}
 
@@ -112,7 +142,22 @@ Image loadPAM(std::ifstream& is) {
 }
 
 void writePAM(const Image& img, std::ofstream& os) {
+	os << "P7" << std::endl
+		<< "WIDTH " << img.rows() << std::endl
+		<< "HEIGHT " << img.cols() << std::endl
+		<< "MAXVAL 255" << std::endl
+		<< "DEPTH " << img.depth() << std::endl
+		<< "TUPLTYPE " << img.type() << std::endl
+		<< "ENDHDR" << std::endl;
 
+	for (size_t w = 0; w < img.rows(); w++) {
+		for (size_t h = 0; h < img.cols(); h++) {
+			const uint8_t* pixel = img(w, h);
+			for (size_t c = 0; c < img.depth(); c++) {
+				os.write(reinterpret_cast<const char*>(&pixel[c]), sizeof(uint8_t));
+			}
+		}
+	}
 }
 
 int main(int argc, char** argv) {
@@ -126,7 +171,17 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	Image img = loadPAM(is);
+	RGBImage img = (RGBImage&)loadPAM(is);
+	std::vector<GrayscaleImage> channels = img.split();
+
+	std::string o_filenames[3] = { "filename_R.pam", "filename_G.pam", "filename_B.pam" };
+	for (size_t i = 0; i < 3; i++) {
+		std::ofstream os(o_filenames[i], std::ios::binary);
+		if (!os) {
+			return 1;
+		}
+		writePAM(channels[i], os);
+	}
 
 	return 0;
 }
