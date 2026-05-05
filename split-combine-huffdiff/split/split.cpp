@@ -69,20 +69,6 @@ public:
 		: Image(width, height, 3, "RGB") {
 	}
 
-	const uint8_t* operator()(const size_t& i, const size_t& j) const override {
-		assert(i >= 0 && i < rows() && j >= 0 && j < cols());
-		uint8_t pixel[3];
-		for (uint8_t k = 0; k < 3; k++) {
-			pixel[k] = data()[(i * cols() + j) * depth() + k];
-		}
-
-		return pixel;
-	}
-	uint8_t* operator()(const size_t& i, const size_t& j) override {
-		return const_cast<uint8_t*>(
-			static_cast<const RGBImage*>(this)->operator()(i, j));
-	}
-
 	std::vector<GrayscaleImage> split() const {
 		std::vector<GrayscaleImage> channels;
 		for (size_t i = 0; i < this->depth(); i++) {
