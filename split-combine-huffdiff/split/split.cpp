@@ -34,6 +34,8 @@ public:
 	std::vector<uint8_t>& data() { return data_; }
 };
 
+using RGB = std::array<uint8_t, 3>;
+
 class Image : public Matrix {
 private:
 	size_t depth_;
@@ -109,7 +111,7 @@ Image loadPAM(std::ifstream& is) {
 	return img;
 }
 
-void writePAM(const Image& img) {
+void writePAM(const Image& img, std::ofstream& os) {
 
 }
 
