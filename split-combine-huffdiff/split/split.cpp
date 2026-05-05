@@ -87,10 +87,9 @@ public:
 	}
 };
 
-Image loadPAM(std::ifstream& is) {
+RGBImage loadPAM(std::ifstream& is) {
 	std::string magicNumber;
-	size_t width, height, depth;
-	std::string type;
+	size_t width, height;
 
 	is >> magicNumber;
 
@@ -109,18 +108,12 @@ Image loadPAM(std::ifstream& is) {
 		else if (token == "HEIGHT") {
 			ss >> height;
 		}
-		else if (token == "DEPTH") {
-			ss >> depth;
-		}
-		else if (token == "TUPLTYPE") {
-			ss >> type;
-		}
 	}
 
-	Image img(width, height, depth, type);
+	RGBImage img(width, height);
 	for (size_t w = 0; w < img.rows(); w++) {
 		for (size_t h = 0; h < img.cols(); h++) {
-			is.read(reinterpret_cast<char*>(img(w, h)), depth);
+			is.read(reinterpret_cast<char*>(img(w, h)), 3);
 		}
 	}
 
@@ -157,10 +150,16 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	RGBImage img = (RGBImage&)loadPAM(is);
+	RGBImage img = loadPAM(is);
 	std::vector<GrayscaleImage> channels = img.split();
 
-	std::string o_filenames[3] = { "filename_R.pam", "filename_G.pam", "filename_B.pam" };
+	for (size_t i = 0; i < 4; i++) {
+		i_filename.pop_back();
+	}
+	std::string o_filenames[3] = { 
+		i_filename + "_R.pam", 
+		i_filename + "_G.pam", 
+		i_filename + "_B.pam" };
 	for (size_t i = 0; i < 3; i++) {
 		std::ofstream os(o_filenames[i], std::ios::binary);
 		if (!os) {
