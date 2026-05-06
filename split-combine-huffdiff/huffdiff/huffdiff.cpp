@@ -63,6 +63,46 @@ public:
 	}
 };
 
+RGBImage loadPAM(std::ifstream& is) {
+	std::string magicNumber;
+	size_t width, height;
+	is >> magicNumber;
+
+	std::string line;
+	while (std::getline(is, line)) {
+		std::stringstream ss(line);
+		std::string token;
+		ss >> token;
+
+		if (token == "ENDHDR") {
+			break;
+		}
+		if (token == "WIDTH") {
+			ss >> width;
+		}
+		else if ("HEIGHT") {
+			ss >> height;
+		}
+	}
+
+	RGBImage img(width, height);
+	for (size_t i = 0; i < img.rows(); i++) {
+		for (size_t j = 0; j < img.cols(); j++) {
+			is.read(reinterpret_cast<char*>(img(i, j)), 3 * sizeof(uint8_t));
+		}
+	}
+
+	return img;
+}
+
+GrayscaleImage computeDiff(const RGBImage& img) {
+	GrayscaleImage diff(img.rows(), img.cols());
+
+
+
+	return diff;
+}
+
 int main(int argc, char** argv) {
 	if (argc != 4) {
 		return 1;
@@ -79,6 +119,9 @@ int main(int argc, char** argv) {
 	if (!os) {
 		return 1;
 	}
+
+	RGBImage img = loadPAM(is);
+	GrayscaleImage diff = computeDiff(img);
 
 	return 0;
 }
