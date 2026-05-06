@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="huffdiff.vcxproj" />
+  <Project Path="huffdiff.vcxproj" Id="deda947a-8dac-4bc3-82ba-d1073b1d5d3e" />
 </Solution>

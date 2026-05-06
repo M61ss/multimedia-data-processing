@@ -16,12 +16,12 @@ public:
 		: cols_(cols), rows_(rows), depth_(depth), type_(type) {
 	}
 
-	virtual const uint8_t* operator()(const size_t& i, const size_t& j) const {
+	const uint8_t* operator()(const size_t& i, const size_t& j) const {
 		assert(i >= 0 && i < rows_ && j >= 0 && j < cols_);
 
 		return &data_[i * cols_ + j];
 	}
-	virtual uint8_t* operator()(const size_t& i, const size_t& j) {
+	uint8_t* operator()(const size_t& i, const size_t& j) {
 		return const_cast<uint8_t*>(
 			static_cast<const Image*>(this)->operator()(i, j));
 	}
@@ -46,24 +46,7 @@ public:
 	}
 };
 
-class RGBImage : public Image {
-public:
-	RGBImage(const size_t& width, const size_t& height)
-		: Image(width, height, 3, "RGB") {
-	}
-
-	const uint8_t* operator()(const size_t& i, const size_t& j) const override {
-		assert(i >= 0 && i < rows() && j >= 0 && j < cols());
-
-		return &data()[(i * cols() + j) * 3];
-	}
-	uint8_t* operator()(const size_t& i, const size_t& j) override {
-		return const_cast<uint8_t*>(
-			static_cast<const RGBImage*>(this)->operator()(i, j));
-	}
-};
-
-RGBImage loadPAM(std::ifstream& is) {
+GrayscaleImage loadPAM(std::ifstream& is) {
 	std::string magicNumber;
 	size_t width, height;
 	is >> magicNumber;
@@ -85,20 +68,20 @@ RGBImage loadPAM(std::ifstream& is) {
 		}
 	}
 
-	RGBImage img(width, height);
+	GrayscaleImage img(width, height);
 	for (size_t i = 0; i < img.rows(); i++) {
 		for (size_t j = 0; j < img.cols(); j++) {
-			is.read(reinterpret_cast<char*>(img(i, j)), 3 * sizeof(uint8_t));
+			is.read(reinterpret_cast<char*>(img(i, j)), sizeof(uint8_t));
 		}
 	}
 
 	return img;
 }
 
-GrayscaleImage computeDiff(const RGBImage& img) {
+GrayscaleImage computeDiff(const GrayscaleImage& img) {
 	GrayscaleImage diff(img.rows(), img.cols());
 
-
+	diff(0, 0) = *(img(0, 0));
 
 	return diff;
 }
@@ -120,7 +103,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	RGBImage img = loadPAM(is);
+	GrayscaleImage img = loadPAM(is);
 	GrayscaleImage diff = computeDiff(img);
 
 	return 0;
