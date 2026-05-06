@@ -77,8 +77,10 @@ public:
 
 		for (size_t w = 0; w < this->rows(); w++) {
 			for (size_t h = 0; h < this->cols(); h++) {
+				const uint8_t* pixel = this->operator()(w, h);
 				for (size_t c = 0; c < this->depth(); c++) {
-					*(channels[c](w, h)) = this->operator()(w, h)[c];
+					uint8_t* channelPixel = channels[c](w, h);
+					*channelPixel = pixel[c];
 				}
 			}
 		}
@@ -124,8 +126,8 @@ void writePAM(const Image& img, std::ofstream& os) {
 	os << "P7" << std::endl
 		<< "WIDTH " << img.rows() << std::endl
 		<< "HEIGHT " << img.cols() << std::endl
-		<< "MAXVAL 255" << std::endl
 		<< "DEPTH " << img.depth() << std::endl
+		<< "MAXVAL 255" << std::endl
 		<< "TUPLTYPE " << img.type() << std::endl
 		<< "ENDHDR" << std::endl;
 
