@@ -13,15 +13,15 @@ private:
 
 public:
 	Image(const size_t& rows, const size_t& cols, const size_t& depth, const std::string& type) 
-		: cols_(cols), rows_(rows), depth_(depth), type_(type) {
+		: cols_(cols), rows_(rows), depth_(depth), type_(type), data_(rows * cols * depth) {
 	}
 
-	const uint8_t* operator()(const size_t& i, const size_t& j) const {
+	virtual const uint8_t* operator()(const size_t& i, const size_t& j) const {
 		assert(i >= 0 && i < rows_ && j >= 0 && j < cols_);
 
 		return &data_[i * cols_ + j];
 	}
-	uint8_t* operator()(const size_t& i, const size_t& j) {
+	virtual uint8_t* operator()(const size_t& i, const size_t& j) {
 		return const_cast<uint8_t*>(
 			static_cast<const Image*>(this)->operator()(i, j));
 	}
@@ -63,7 +63,7 @@ GrayscaleImage loadPAM(std::ifstream& is) {
 		if (token == "WIDTH") {
 			ss >> width;
 		}
-		else if ("HEIGHT") {
+		else if (token == "HEIGHT") {
 			ss >> height;
 		}
 	}
@@ -78,10 +78,34 @@ GrayscaleImage loadPAM(std::ifstream& is) {
 	return img;
 }
 
+void writePAM(std::ofstream& os, const Image& img) {
+	os << "P7" << std::endl
+		<< "WIDTH " << img.rows() << std::endl
+		<< "HEIGHT " << img.cols() << std::endl
+		<< "DEPTH " << img.depth() << std::endl
+		<< "MAXVAL 255" << std::endl
+		<< "TUPLTYPE " << img.type() << std::endl
+		<< "ENDHDR" << std::endl;
+
+	for (size_t i = 0; i < img.rows(); i++) {
+		for (size_t j = 0; j < img.cols(); j++) {
+			os.write(reinterpret_cast<const char*>(img(i, j)), img.depth() * sizeof(uint8_t));
+		}
+	}
+}
+
 GrayscaleImage computeDiff(const GrayscaleImage& img) {
 	GrayscaleImage diff(img.rows(), img.cols());
 
-	diff(0, 0) = *(img(0, 0));
+	*(diff(0, 0)) = *(img(0, 0)) / 2 + 127;
+	for (size_t j = 1; j < img.cols(); j++) {
+		*(diff(0, j)) = (*(img(0, j)) - *(img(0, j - 1))) / 2 + 127;
+	}
+	for (size_t i = 1; i < img.rows(); i++) {
+		for (size_t j = 0; j < img.cols(); j++) {
+			*(diff(i, j)) = (*(img(i, j)) - *(img(i - 1, j))) / 2 + 127;
+		}
+	}
 
 	return diff;
 }
@@ -105,6 +129,7 @@ int main(int argc, char** argv) {
 
 	GrayscaleImage img = loadPAM(is);
 	GrayscaleImage diff = computeDiff(img);
+	writePAM(os, diff);
 
 	return 0;
 }
