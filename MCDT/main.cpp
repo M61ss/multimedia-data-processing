@@ -33,11 +33,9 @@ public:
 		}
 
 		size_t numSymbols = data_.size();
-		for (auto& [sym, count] : symbols) {
-			count /= numSymbols;
-		}
 		double entropy = 0;
-		for (const auto& [sym, prob] : symbols) {
+		for (auto& [sym, prob] : symbols) {
+			prob /= numSymbols;
 			entropy += prob * log2(1 / prob);
 		}
 
@@ -57,26 +55,26 @@ public:
 	}
 };
 
-std::vector<int> computeError(const std::vector<int>& signal1, const std::vector<int>& signal2) {
-	assert(signal1.size() == signal2.size());
-	std::vector<int> error;
-	for (size_t i = 0; i < signal1.size(); i++) {
-		error.push_back(signal2[i] - signal1[i]);
+std::vector<int> computeError(const AudioSignal& as1, const AudioSignal& as2) {
+	assert(as1.size() == as2.size());
+	std::vector<int> error(as1.size());
+	for (size_t i = 0; i < as1.size(); i++) {
+		error[i] = as2.data()[i] - as1.data()[i];
 	}
 	
 	return error;
 }
 
-std::vector<int> mcdt(const std::vector<int>& signal) {
+std::vector<int> mcdt(const AudioSignal& as) {
 	return std::vector<int>();
 }
 
-std::vector<int> imcdt(const std::vector<int>& qtSignal) {
+std::vector<int> imcdt(const AudioSignal& as) {
 	return std::vector<int>();
 }
 
-void saveRaw(const std::vector<int>& signal, std::ofstream& os) {
-	for (const auto& x : signal) {
+void saveRaw(const std::vector<int>& data, std::ofstream& os) {
+	for (const auto& x : data) {
 		os.write(reinterpret_cast<const char*>(&x), sizeof(int16_t));
 	}
 }
@@ -111,7 +109,7 @@ int main(int argc, char** argv) {
 	if (!errorQt) {
 		return 1;
 	}
-	std::vector<int> qtError = computeError(signal.data(), qtSignal.data());
+	std::vector<int> qtError = computeError(signal, qtSignal);
 	saveRaw(qtError, errorQt);
 
 	return 0;
