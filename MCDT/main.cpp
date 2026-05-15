@@ -1,8 +1,9 @@
 #include <fstream>
+#include <iostream>
 #include <vector>
 #include <map>
 
-class MCDT {
+class AudioSignal {
 private:
 	std::ifstream& is_;
 	std::vector<int> data_;
@@ -12,6 +13,11 @@ private:
 		while (is_.read(reinterpret_cast<char*>(&sample), sizeof(int16_t))) {
 			data_.push_back(sample);
 		}
+	}
+
+public:
+	AudioSignal(std::ifstream& is) : is_(is), data_() {
+		loadData();
 	}
 
 	double computeEntropy() {
@@ -31,50 +37,34 @@ private:
 
 		return entropy;
 	}
-
-	void dequantize(const size_t& Q) {
-
-	}
-
-	std::vector<int> computeError() {
-
-	}
-
-	void save(const std::vector<int>& track, std::ofstream& os) {
-
-	}
-
-public:
-	MCDT(std::ifstream& is) 
-		: is_(is), data_() {
-	}
-
-	void quantize(const size_t& Q, std::ofstream& os) {
-		loadData();
-		double entropy = computeEntropy();
-	}
-
 };
 
+std::vector<int> mcdt(const std::vector<int>& track, const size_t& Q) {
+	return std::vector<int>();
+}
+
+std::vector<int> imcdt(const std::vector<int>& qtSignal, const size_t& Q) {
+	return std::vector<int>();
+}
+
+void saveRaw(const std::vector<int>& signal, std::ofstream& os) {
+
+}
+
 int main(int argc, char** argv) {
-	if (argc != 3) {
+	if (argc != 2) {
 		return 1;
 	}
 
 	std::string i_filename = argv[1];
-	std::string o_filename = argv[2];
 
 	std::ifstream is(i_filename, std::ios::binary);
 	if (!is) {
 		return 1;
 	}
-	std::ofstream os(o_filename, std::ios::binary);
-	if (!os) {
-		return 1;
-	}
 
-	MCDT mcdt(is);
-	mcdt.quantize(2600, os);
+	AudioSignal signal(is);
+	std::cout << "Original signal entropy: " << signal.computeEntropy() << std::endl;
 
 	return 0;
 }
