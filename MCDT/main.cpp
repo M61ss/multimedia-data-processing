@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <cassert>
 
 class AudioSignal {
 private:
@@ -20,6 +21,11 @@ public:
 		loadData();
 	}
 
+	const std::vector<int>& data() const { return data_; }
+	const size_t& size() const { return data_.size(); }
+
+	std::vector<int>& data() { return data_; }
+
 	double computeEntropy() {
 		std::map<int, double> symbols;
 		for (const auto& x : data_) {
@@ -37,18 +43,42 @@ public:
 
 		return entropy;
 	}
+
+	void quantize(const int& Q) {
+		for (auto& x : data_) {
+			x /= Q;
+		}
+	}
+
+	void dequantize(const int& Q) {
+		for (auto& x : data_) {
+			x *= Q;
+		}
+	}
 };
 
-std::vector<int> mcdt(const std::vector<int>& track, const size_t& Q) {
+std::vector<int> computeError(const std::vector<int>& signal1, const std::vector<int>& signal2) {
+	assert(signal1.size() == signal2.size());
+	std::vector<int> error;
+	for (size_t i = 0; i < signal1.size(); i++) {
+		error.push_back(signal2[i] - signal1[i]);
+	}
+	
+	return error;
+}
+
+std::vector<int> mcdt(const std::vector<int>& signal) {
 	return std::vector<int>();
 }
 
-std::vector<int> imcdt(const std::vector<int>& qtSignal, const size_t& Q) {
+std::vector<int> imcdt(const std::vector<int>& qtSignal) {
 	return std::vector<int>();
 }
 
 void saveRaw(const std::vector<int>& signal, std::ofstream& os) {
-
+	for (const auto& x : signal) {
+		os.write(reinterpret_cast<const char*>(&x), sizeof(int16_t));
+	}
 }
 
 int main(int argc, char** argv) {
@@ -65,6 +95,24 @@ int main(int argc, char** argv) {
 
 	AudioSignal signal(is);
 	std::cout << "Original signal entropy: " << signal.computeEntropy() << std::endl;
+
+	AudioSignal qtSignal = signal;
+	qtSignal.quantize(2600);
+	std::cout << "Quantized signal entropy: " << qtSignal.computeEntropy() << std::endl;
+
+	std::ofstream outputQt("output_qt.raw", std::ios::binary);
+	if (!outputQt) {
+		return 1;
+	}
+	qtSignal.dequantize(2600);
+	saveRaw(qtSignal.data(), outputQt);
+
+	std::ofstream errorQt("error_qt.raw", std::ios::binary);
+	if (!errorQt) {
+		return 1;
+	}
+	std::vector<int> qtError = computeError(signal.data(), qtSignal.data());
+	saveRaw(qtError, errorQt);
 
 	return 0;
 }
