@@ -60,26 +60,31 @@ public:
 			data_.insert(data_.begin(), 0);
 			data_.push_back(0);
 		}
-
-		std::vector<int> blocks(data_.size() * 2);
-		for (size_t i = 0; i < data_.size() / (windowSize / 2); i++) {
-			std::copy(data_.begin() + (i * windowSize), data_.begin()+ ((i + 1) * windowSize), blocks[i]);
+		while ((data_.size() % windowSize) != 0) {
+			data_.push_back(0);
 		}
 
-		//std::vector<int> transformed;
-		//for (size_t i = 0; i < data_.size() / (windowSize / 2); i++) {
-		//	for (size_t k = 0; k < windowSize; k++) {
-		//		int Xk = 0;
-		//		for (size_t n = 0; n < windowSize; n++) {
-		//			const int& xn = data_[i * windowSize + n];
-		//			const double wn = sin((std::numbers::pi / 2 * windowSize) * (n + 0.5));
-		//			Xk += xn * wn * cos((std::numbers::pi / windowSize) * (n + 0.5 + windowSize / 2) * (k + 0.5));
-		//		}
-		//		transformed.push_back(Xk);
-		//	}
-		//}
+		std::vector<int> blocks;
+		const size_t stepSize = windowSize / 2;
+		const size_t rows = data_.size() / stepSize - 1;
+		for (size_t i = 0; i < rows; i++) {
+			for (size_t j = 0; j < windowSize; j++) {
+				blocks.push_back(data_[i * stepSize + j]);
+			}
+		}
+		data_.clear();
 
-		//data_ = transformed;
+		for (size_t i = 0; i < rows; i++) {
+			for (size_t k = 0; k < windowSize; k++) {
+				int Xk = 0;
+				for (size_t n = 0; n < windowSize * 2; n++) {
+					const int xn = blocks[i * windowSize * 2 + n];
+					const double wn = sin((std::numbers::pi / 2 * windowSize) * (n + 0.5));
+					Xk += static_cast<int>(xn * wn * cos((std::numbers::pi / windowSize) * (n + 0.5 + windowSize / 2) * (k + 0.5)));
+				}
+				data_.push_back(Xk);
+			}
+		}
 	}
 
 	void imcdt(const size_t& windowSize) {
