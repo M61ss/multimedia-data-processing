@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <cassert>
+#include <numbers>
 
 class AudioSignal {
 private:
@@ -22,7 +23,7 @@ public:
 	}
 
 	const std::vector<int>& data() const { return data_; }
-	const size_t& size() const { return data_.size(); }
+	const size_t size() const { return data_.size(); }
 
 	std::vector<int>& data() { return data_; }
 
@@ -53,6 +54,52 @@ public:
 			x *= Q;
 		}
 	}
+
+	void mcdt(const size_t& windowSize) {
+		for (size_t i = 0; i < windowSize; i++) {
+			data_.insert(data_.begin(), 0);
+			data_.push_back(0);
+		}
+
+		std::vector<int> blocks(data_.size() * 2);
+		for (size_t i = 0; i < data_.size() / (windowSize / 2); i++) {
+			std::copy(data_.begin() + (i * windowSize), data_.begin()+ ((i + 1) * windowSize), blocks[i]);
+		}
+
+		//std::vector<int> transformed;
+		//for (size_t i = 0; i < data_.size() / (windowSize / 2); i++) {
+		//	for (size_t k = 0; k < windowSize; k++) {
+		//		int Xk = 0;
+		//		for (size_t n = 0; n < windowSize; n++) {
+		//			const int& xn = data_[i * windowSize + n];
+		//			const double wn = sin((std::numbers::pi / 2 * windowSize) * (n + 0.5));
+		//			Xk += xn * wn * cos((std::numbers::pi / windowSize) * (n + 0.5 + windowSize / 2) * (k + 0.5));
+		//		}
+		//		transformed.push_back(Xk);
+		//	}
+		//}
+
+		//data_ = transformed;
+	}
+
+	void imcdt(const size_t& windowSize) {
+		//std::vector<int> antitrasformed;
+		//for (size_t i = 0; i < data_.size() / windowSize; i++) {
+		//	for (size_t n = 0; n < windowSize * 2; n++) {
+		//		const double wn = sin((std::numbers::pi / 2 * windowSize) * (n + 0.5));
+		//		int yn = (2 / windowSize) * wn;
+		//		int sum = 0;
+		//		for (size_t k = 0; k < windowSize; k++) {
+		//			const int& Xk = data_[i * windowSize + k];
+		//			sum += Xk * cos((std::numbers::pi / 2) * (n + 0.5 + windowSize / 2) * (k + 0.5));
+		//		}
+		//		yn *= sum;
+		//		antitrasformed.push_back(yn);
+		//	}
+		//}
+
+		//data_ = antitrasformed;
+	}
 };
 
 std::vector<int> computeError(const AudioSignal& as1, const AudioSignal& as2) {
@@ -63,14 +110,6 @@ std::vector<int> computeError(const AudioSignal& as1, const AudioSignal& as2) {
 	}
 	
 	return error;
-}
-
-std::vector<int> mcdt(const AudioSignal& as) {
-	return std::vector<int>();
-}
-
-std::vector<int> imcdt(const AudioSignal& as) {
-	return std::vector<int>();
 }
 
 void saveRaw(const std::vector<int>& data, std::ofstream& os) {
@@ -94,23 +133,42 @@ int main(int argc, char** argv) {
 	AudioSignal signal(is);
 	std::cout << "Original signal entropy: " << signal.computeEntropy() << std::endl;
 
-	AudioSignal qtSignal = signal;
-	qtSignal.quantize(2600);
-	std::cout << "Quantized signal entropy: " << qtSignal.computeEntropy() << std::endl;
+	AudioSignal quantized = signal;
+	quantized.quantize(2600);
+	std::cout << "Quantized signal entropy: " << quantized.computeEntropy() << std::endl;
 
 	std::ofstream outputQt("output_qt.raw", std::ios::binary);
 	if (!outputQt) {
 		return 1;
 	}
-	qtSignal.dequantize(2600);
-	saveRaw(qtSignal.data(), outputQt);
+	quantized.dequantize(2600);
+	saveRaw(quantized.data(), outputQt);
 
 	std::ofstream errorQt("error_qt.raw", std::ios::binary);
 	if (!errorQt) {
 		return 1;
 	}
-	std::vector<int> qtError = computeError(signal, qtSignal);
+	std::vector<int> qtError = computeError(signal, quantized);
 	saveRaw(qtError, errorQt);
+
+	AudioSignal compressed = signal;
+	compressed.mcdt(1024);
+	compressed.quantize(10000);
+	std::cout << "Compressed signal entropy: " << quantized.computeEntropy() << std::endl;
+	compressed.dequantize(10000);
+	compressed.imcdt(1024);
+	std::ofstream outputCompressed("output.raw", std::ios::binary);
+	if (!outputCompressed) {
+		return 1;
+	}
+	saveRaw(compressed.data(), outputCompressed);
+
+	std::ofstream errorCompression("error.raw", std::ios::binary);
+	if (!errorCompression) {
+		return 1;
+	}
+	std::vector<int> compressionError = computeError(signal, compressed);
+	saveRaw(compressionError, errorCompression);
 
 	return 0;
 }
