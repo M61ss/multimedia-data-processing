@@ -78,14 +78,7 @@ public:
 			v.push_back(0);
 			v.insert(v.begin(), 0);
 		}
-
-		const size_t stepSize = N_ / 2;
-		const size_t rows = v.size() / stepSize - 1;
-		for (size_t i = 0; i < rows; i++) {
-			for (size_t k = 0; k < N_; k++) {
-				
-			}
-		}
+		
 	}
 
 	void invert(std::vector<int16_t>& v) {
