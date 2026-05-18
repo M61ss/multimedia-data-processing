@@ -79,7 +79,7 @@ public:
 			for (size_t k = 0; k < windowSize; k++) {
 				double Xk = 0;
 				for (size_t n = 0; n < windowSize * 2; n++) {
-					const int xn = blocks[i * windowSize * 2 + n];
+					const int xn = blocks[i * windowSize + n];
 					const double wn = sin((std::numbers::pi / 2 * windowSize) * (n + 0.5));
 					Xk += xn * wn * cos((std::numbers::pi / windowSize) * (n + 0.5 + windowSize / 2) * (k + 0.5));
 				}
