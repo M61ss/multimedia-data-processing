@@ -33,6 +33,16 @@ public:
 			v.insert(v.begin(), 0);
 		}
 		
+		std::vector<int16_t> transformed(v.size());
+		for (size_t i = 0; i < v.size() - N_; i += N_) {
+			for (size_t k = 0; k < N_; k++) {
+				double Xk = 0.0;
+				for (size_t n = 0; n < N_ * 2; n++) {
+					Xk += v[i + n] * w_[n] * cos_[k * N_ + n];
+				}
+				transformed[i + k] = static_cast<int16_t>(round(Xk));
+			}
+		}
 	}
 
 	void invert(std::vector<int16_t>& v) {
@@ -52,7 +62,7 @@ std::vector<int16_t> loadData(std::ifstream& is) {
 
 void quantize(std::vector<int16_t>& v, const int& Q) {
 	for (auto& x : v) {
-		x = static_cast<int16_t>(round(x / Q));
+		x = static_cast<int16_t>(round(static_cast<double>(x) / Q));
 	}
 }
 
@@ -119,6 +129,10 @@ int main(int argc, char** argv) {
 	MDCT mdct(N);
 	std::vector<int16_t> transformed(original);
 	mdct.apply(transformed);
+	std::cout << "MDCT coefficient entropy: " << entropy(transformed) << std::endl;
+	quantize(transformed, 10000);
+	std::cout << "Quantized MDCT coefficient entropy: " << entropy(transformed) << std::endl;
+	dequantize(transformed, 10000);
 
 	return 0;
 }
