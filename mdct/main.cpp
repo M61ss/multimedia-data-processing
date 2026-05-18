@@ -6,8 +6,6 @@
 #include <cassert>
 #include <numbers>
 
-
-
 class MDCT {
 private:
 	std::vector<double> cos_;
