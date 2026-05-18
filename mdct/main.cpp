@@ -4,6 +4,7 @@
 #include <iterator>
 #include <map>
 #include <cassert>
+#include <numbers>
 
 class AudioSignal {
 private:
@@ -47,6 +48,49 @@ public:
 	const int16_t* rawData() const { return data_.data(); }
 	const size_t size() const { return data_.size(); }
 	const size_t rawSize() const { return data_.size() * sizeof(int16_t); }
+
+	std::vector<int16_t>& data() { return data_; }
+};
+
+class MDCT {
+private:
+	std::vector<double> cos_;
+	std::vector<double> w_;
+	const size_t& N_;
+
+public:
+	MDCT(const size_t& N) : cos_(N * 2 * N), w_(N * 2), N_(N) {
+		for (size_t k = 0; k < N; k++) {
+			for (size_t n = 0; n < N * 2; n++) {
+				cos_[k * N + n] = cos((std::numbers::pi / N) * (n + 0.5 + N / 2) * (k + 0.5));
+			}
+		}
+		for (size_t n = 0; n < N * 2; n++) {
+			w_[n] = sin((std::numbers::pi / (2 * N)) * (n + 0.5));
+		}
+	}
+
+	void apply(std::vector<int16_t>& v) {
+		while (v.size() % N_ != 0) {
+			v.push_back(0);
+		}
+		for (size_t i = 0; i < N_; i++) {
+			v.push_back(0);
+			v.insert(v.begin(), 0);
+		}
+
+		const size_t stepSize = N_ / 2;
+		const size_t rows = v.size() / stepSize - 1;
+		for (size_t i = 0; i < rows; i++) {
+			for (size_t k = 0; k < N_; k++) {
+				
+			}
+		}
+	}
+
+	void invert(std::vector<int16_t>& v) {
+
+	}
 };
 
 double entropy(const std::vector<int16_t>& v) {
@@ -101,6 +145,11 @@ int main(int argc, char** argv) {
 	writeRaw(qt, "output_qt.raw");
 	AudioSignal error = computeError(original, qt);
 	writeRaw(error, "error_qt.raw");
+
+	const size_t N = 1024;
+	MDCT mdct(N);
+	AudioSignal transformed(original);
+	mdct.apply(transformed.data());
 
 	return 0;
 }
