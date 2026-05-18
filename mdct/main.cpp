@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <cassert>
 
 class AudioSignal {
 private:
@@ -15,11 +16,20 @@ private:
 		data_.resize(size / sizeof(int16_t));
 		is.read(reinterpret_cast<char*>(data_.data()), size);
 	}
+
 public:
 	AudioSignal(std::ifstream& is) : data_() {
 		loadData(is);
 	}
 	AudioSignal(const std::vector<int16_t>& signal) : data_(signal) {}
+	AudioSignal(const size_t& size) : data_(size) {}
+
+	const int16_t& operator[](const size_t& i) const {
+		return data_[i];
+	}
+	int16_t& operator[](const size_t& i) {
+		return data_[i];
+	}
 
 	void quantize(const int& Q) {
 		for (auto& x : data_) {
@@ -54,7 +64,21 @@ double entropy(const std::vector<int16_t>& v) {
 	return entropy;
 }
 
-void writeRaw(const AudioSignal& as, std::ofstream& os) {
+AudioSignal computeError(const AudioSignal& as1, const AudioSignal& as2) {
+	assert(as1.size() == as2.size());
+	AudioSignal error(as1.size());
+	for (size_t i = 0; i < as1.size(); i++) {
+		error[i] = as1[i] - as2[i];
+	}
+
+	return error;
+}
+
+void writeRaw(const AudioSignal& as, const std::string& filename) {
+	std::ofstream os(filename, std::ios::binary);
+	if (!os) {
+		throw 1;
+	}
 	os.write(reinterpret_cast<const char*>(as.rawData()), as.rawSize());
 }
 
@@ -74,11 +98,9 @@ int main(int argc, char** argv) {
 	qt.quantize(2600);
 	std::cout << "Quantized signal entropy: " << entropy(qt.data()) << std::endl;
 	qt.dequantize(2600);
-	std::ofstream output_qt("output_qt.raw", std::ios::binary);
-	if (!output_qt) {
-		return 1;
-	}
-	writeRaw(qt, output_qt);
+	writeRaw(qt, "output_qt.raw");
+	AudioSignal error = computeError(original, qt);
+	writeRaw(error, "error_qt.raw");
 
 	return 0;
 }
