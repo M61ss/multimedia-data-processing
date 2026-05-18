@@ -60,29 +60,30 @@ public:
 			data_.insert(data_.begin(), 0);
 			data_.push_back(0);
 		}
-		while ((data_.size() % windowSize) != 0) {
+
+		const size_t stepSize = windowSize / 2;
+		while ((data_.size() % stepSize) != 0) {
 			data_.push_back(0);
 		}
 
-		std::vector<int> blocks;
-		const size_t stepSize = windowSize / 2;
 		const size_t rows = data_.size() / stepSize - 1;
-		for (size_t i = 0; i < rows; i++) {
-			for (size_t j = 0; j < windowSize; j++) {
-				blocks.push_back(data_[i * stepSize + j]);
-			}
+		std::vector<int> blocks(rows * windowSize);
+		auto pos = blocks.begin();
+		for (auto it = data_.begin(); it != data_.end() - stepSize; it += stepSize) {
+			std::copy(it, it + windowSize, pos);
+			pos += windowSize;
 		}
 		data_.clear();
 
-		for (size_t i = 0; i < rows; i++) {
+		for (size_t i = 0; i < rows; i += 2) {
 			for (size_t k = 0; k < windowSize; k++) {
-				int Xk = 0;
+				double Xk = 0;
 				for (size_t n = 0; n < windowSize * 2; n++) {
 					const int xn = blocks[i * windowSize * 2 + n];
 					const double wn = sin((std::numbers::pi / 2 * windowSize) * (n + 0.5));
-					Xk += static_cast<int>(xn * wn * cos((std::numbers::pi / windowSize) * (n + 0.5 + windowSize / 2) * (k + 0.5)));
+					Xk += xn * wn * cos((std::numbers::pi / windowSize) * (n + 0.5 + windowSize / 2) * (k + 0.5));
 				}
-				data_.push_back(Xk);
+				data_.push_back(static_cast<int>(round(Xk)));
 			}
 		}
 	}
