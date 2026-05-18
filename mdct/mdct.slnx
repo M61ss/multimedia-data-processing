@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="mdct.vcxproj" />
+  <Project Path="mdct.vcxproj" Id="83f1f12d-2c6e-4554-bc20-59c92dc6756c" />
 </Solution>

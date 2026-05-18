@@ -6,51 +6,7 @@
 #include <cassert>
 #include <numbers>
 
-class AudioSignal {
-private:
-	std::vector<int16_t> data_;
 
-	void loadData(std::ifstream& is) {
-		is.seekg(0, std::ios::end);
-		size_t size = is.tellg();
-		is.seekg(0, std::ios::beg);
-		data_.resize(size / sizeof(int16_t));
-		is.read(reinterpret_cast<char*>(data_.data()), size);
-	}
-
-public:
-	AudioSignal(std::ifstream& is) : data_() {
-		loadData(is);
-	}
-	AudioSignal(const std::vector<int16_t>& signal) : data_(signal) {}
-	AudioSignal(const size_t& size) : data_(size) {}
-
-	const int16_t& operator[](const size_t& i) const {
-		return data_[i];
-	}
-	int16_t& operator[](const size_t& i) {
-		return data_[i];
-	}
-
-	void quantize(const int& Q) {
-		for (auto& x : data_) {
-			x = static_cast<int16_t>(round(x / Q));
-		}
-	}
-
-	void dequantize(const int& Q) {
-		for (auto& x : data_) {
-			x = static_cast<int16_t>(x * Q);
-		}
-	}
-
-	const std::vector<int16_t>& data() const { return data_; }
-	const int16_t* rawData() const { return data_.data(); }
-	const size_t size() const { return data_.size(); }
-	const size_t rawSize() const { return data_.size() * sizeof(int16_t); }
-
-	std::vector<int16_t>& data() { return data_; }
-};
 
 class MDCT {
 private:
@@ -86,6 +42,28 @@ public:
 	}
 };
 
+std::vector<int16_t> loadData(std::ifstream& is) {
+	is.seekg(0, std::ios::end);
+	size_t size = is.tellg();
+	is.seekg(0, std::ios::beg);
+	std::vector<int16_t> data(size / sizeof(int16_t));
+	is.read(reinterpret_cast<char*>(data.data()), size);
+
+	return data;
+}
+
+void quantize(std::vector<int16_t>& v, const int& Q) {
+	for (auto& x : v) {
+		x = static_cast<int16_t>(round(x / Q));
+	}
+}
+
+void dequantize(std::vector<int16_t>& v, const int& Q) {
+	for (auto& x : v) {
+		x = static_cast<int16_t>(x * Q);
+	}
+}
+
 double entropy(const std::vector<int16_t>& v) {
 	std::map<int16_t, double> frequencies;
 	for (size_t i = 0; i < v.size(); i++) {
@@ -101,22 +79,22 @@ double entropy(const std::vector<int16_t>& v) {
 	return entropy;
 }
 
-AudioSignal computeError(const AudioSignal& as1, const AudioSignal& as2) {
-	assert(as1.size() == as2.size());
-	AudioSignal error(as1.size());
-	for (size_t i = 0; i < as1.size(); i++) {
-		error[i] = as1[i] - as2[i];
+std::vector<int16_t> computeError(const std::vector<int16_t>& v1, const std::vector<int16_t>& v2) {
+	assert(v1.size() == v2.size());
+	std::vector<int16_t> error(v1.size());
+	for (size_t i = 0; i < v1.size(); i++) {
+		error[i] = v1[i] - v2[i];
 	}
 
 	return error;
 }
 
-void writeRaw(const AudioSignal& as, const std::string& filename) {
+void writeRaw(const std::vector<int16_t>& data, const std::string& filename) {
 	std::ofstream os(filename, std::ios::binary);
 	if (!os) {
 		throw 1;
 	}
-	os.write(reinterpret_cast<const char*>(as.rawData()), as.rawSize());
+	os.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(int16_t));
 }
 
 int main(int argc, char** argv) {
@@ -129,20 +107,20 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	AudioSignal original(is);
-	std::cout << "Original signal entropy: " << entropy(original.data()) << std::endl;
-	AudioSignal qt(original);
-	qt.quantize(2600);
-	std::cout << "Quantized signal entropy: " << entropy(qt.data()) << std::endl;
-	qt.dequantize(2600);
+	std::vector<int16_t> original = loadData(is);
+	std::cout << "Original signal entropy: " << entropy(original) << std::endl;
+	std::vector<int16_t> qt(original);
+	quantize(qt, 2600);
+	std::cout << "Quantized signal entropy: " << entropy(qt) << std::endl;
+	dequantize(qt, 2600);
 	writeRaw(qt, "output_qt.raw");
-	AudioSignal error = computeError(original, qt);
+	std::vector<int16_t> error = computeError(original, qt);
 	writeRaw(error, "error_qt.raw");
 
 	const size_t N = 1024;
 	MDCT mdct(N);
-	AudioSignal transformed(original);
-	mdct.apply(transformed.data());
+	std::vector<int16_t> transformed(original);
+	mdct.apply(transformed);
 
 	return 0;
 }
