@@ -45,7 +45,7 @@ public:
 
 	void quantize(const int& Q) {
 		for (auto& x : data_) {
-			x /= Q;
+			x = static_cast<int>(round(x / Q));
 		}
 	}
 
@@ -55,7 +55,7 @@ public:
 		}
 	}
 
-	void mcdt(const size_t& windowSize) {
+	void mdct(const size_t& windowSize) {
 		for (size_t i = 0; i < windowSize; i++) {
 			data_.insert(data_.begin(), 0);
 			data_.push_back(0);
@@ -87,7 +87,7 @@ public:
 		}
 	}
 
-	void imcdt(const size_t& windowSize) {
+	void imdct(const size_t& windowSize) {
 		//std::vector<int> antitrasformed;
 		//for (size_t i = 0; i < data_.size() / windowSize; i++) {
 		//	for (size_t n = 0; n < windowSize * 2; n++) {
@@ -157,11 +157,11 @@ int main(int argc, char** argv) {
 	saveRaw(qtError, errorQt);
 
 	AudioSignal compressed = signal;
-	compressed.mcdt(1024);
+	compressed.mdct(1024);
 	compressed.quantize(10000);
 	std::cout << "Compressed signal entropy: " << quantized.computeEntropy() << std::endl;
 	compressed.dequantize(10000);
-	compressed.imcdt(1024);
+	compressed.imdct(1024);
 	std::ofstream outputCompressed("output.raw", std::ios::binary);
 	if (!outputCompressed) {
 		return 1;
