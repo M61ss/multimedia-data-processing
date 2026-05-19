@@ -14,7 +14,7 @@ private:
 	const size_t& N_;
 
 public:
-	MDCT(const size_t& N) : cos_(N * 2 * N), w_(N * 2), N_(N), recRatio_(2 / N) {
+	MDCT(const size_t& N) : cos_(N * 2 * N), w_(N * 2), N_(N), recRatio_(2 / static_cast<double>(N)) {
 		for (size_t k = 0; k < N; k++) {
 			for (size_t n = 0; n < N * 2; n++) {
 				cos_[k * N + n] = cos((std::numbers::pi / N) * (n + 0.5 + N / 2) * (k + 0.5));
@@ -25,10 +25,14 @@ public:
 		}
 	}
 
-	void apply(std::vector<int>& v) {
+	void pad(std::vector<int>& v) {
 		while (v.size() % N_ != 0) {
 			v.push_back(0);
 		}
+	}
+
+	void apply(std::vector<int>& v) {
+		std::cout << "MDCT... ";
 		for (size_t i = 0; i < N_; i++) {
 			v.push_back(0);
 			v.insert(v.begin(), 0);
@@ -45,10 +49,12 @@ public:
 			}
 		}
 		v = transformed;
+		std::cout << "done!" << std::endl;
 	}
 
 	void invert(std::vector<int>& v) {
-		std::vector<int> reconstructedBlocks(v.size() * 2);
+		std::cout << "IMDCT... ";
+		std::vector<int> reconstructed(v.size() + N_);
 		for (size_t i = 0; i < v.size(); i += N_) {
 			for (size_t n = 0; n < N_ * 2; n++) {
 				double yn = recRatio_ * w_[n];
@@ -56,16 +62,15 @@ public:
 				for (size_t k = 0; k < N_; k++) {
 					sum += v[i + k] * cos_[k * N_ + n];
 				}
-				reconstructedBlocks[i + n] = static_cast<int>(round(yn * sum));
+				reconstructed[i + n] += static_cast<int>(round(yn * sum));
 			}
 		}
-
-		v.resize(v.size() - N_ * 2);
-		for (size_t i = N_; i < v.size(); i += 2 * N_) {
-			for (size_t j = 0; j < N_; j++) {
-				v[i - N_] = reconstructedBlocks[i + j] + reconstructedBlocks[i + N_ + j];
-			}
-		}
+		reconstructed.resize(v.size());
+		std::reverse(reconstructed.begin(), reconstructed.end());
+		reconstructed.resize(v.size() - N_);
+		std::reverse(reconstructed.begin(), reconstructed.end());
+		v = reconstructed;
+		std::cout << "done!" << std::endl;
 	}
 };
 
@@ -148,12 +153,17 @@ int main(int argc, char** argv) {
 
 	const size_t N = 1024;
 	MDCT mdct(N);
+	mdct.pad(original);
 	std::vector<int> transformed(original);
 	mdct.apply(transformed);
 	std::cout << "MDCT coefficient entropy: " << entropy(transformed) << std::endl;
 	quantize(transformed, 10000);
 	std::cout << "Quantized MDCT coefficient entropy: " << entropy(transformed) << std::endl;
 	dequantize(transformed, 10000);
+	mdct.invert(transformed);
+	writeRaw(transformed, "output.raw");
+	error = computeError(original, transformed);
+	writeRaw(error, "error.raw");
 
 	return 0;
 }
