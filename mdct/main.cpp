@@ -24,7 +24,7 @@ public:
 		}
 	}
 
-	void apply(std::vector<int16_t>& v) {
+	void apply(std::vector<int>& v) {
 		while (v.size() % N_ != 0) {
 			v.push_back(0);
 		}
@@ -33,47 +33,47 @@ public:
 			v.insert(v.begin(), 0);
 		}
 		
-		std::vector<int16_t> transformed(v.size());
+		std::vector<int> transformed(v.size());
 		for (size_t i = 0; i < v.size() - N_; i += N_) {
 			for (size_t k = 0; k < N_; k++) {
 				double Xk = 0.0;
 				for (size_t n = 0; n < N_ * 2; n++) {
 					Xk += v[i + n] * w_[n] * cos_[k * N_ + n];
 				}
-				transformed[i + k] = static_cast<int16_t>(round(Xk));
+				transformed[i + k] = static_cast<int>(round(Xk));
 			}
 		}
 	}
 
-	void invert(std::vector<int16_t>& v) {
+	void invert(std::vector<int>& v) {
 
 	}
 };
 
-std::vector<int16_t> loadData(std::ifstream& is) {
+std::vector<int> loadData(std::ifstream& is) {
 	is.seekg(0, std::ios::end);
 	size_t size = is.tellg();
 	is.seekg(0, std::ios::beg);
 	std::vector<int16_t> data(size / sizeof(int16_t));
 	is.read(reinterpret_cast<char*>(data.data()), size);
 
-	return data;
+	return std::vector<int>(data.begin(), data.end());
 }
 
-void quantize(std::vector<int16_t>& v, const int& Q) {
+void quantize(std::vector<int>& v, const int& Q) {
 	for (auto& x : v) {
-		x = static_cast<int16_t>(round(static_cast<double>(x) / Q));
+		x = static_cast<int>(round(static_cast<double>(x) / Q));
 	}
 }
 
-void dequantize(std::vector<int16_t>& v, const int& Q) {
+void dequantize(std::vector<int>& v, const int& Q) {
 	for (auto& x : v) {
-		x = static_cast<int16_t>(x * Q);
+		x = static_cast<int>(x * Q);
 	}
 }
 
-double entropy(const std::vector<int16_t>& v) {
-	std::map<int16_t, double> frequencies;
+double entropy(const std::vector<int>& v) {
+	std::map<int, double> frequencies;
 	for (size_t i = 0; i < v.size(); i++) {
 		++frequencies[v[i]];
 	}
@@ -87,9 +87,9 @@ double entropy(const std::vector<int16_t>& v) {
 	return entropy;
 }
 
-std::vector<int16_t> computeError(const std::vector<int16_t>& v1, const std::vector<int16_t>& v2) {
+std::vector<int> computeError(const std::vector<int>& v1, const std::vector<int>& v2) {
 	assert(v1.size() == v2.size());
-	std::vector<int16_t> error(v1.size());
+	std::vector<int> error(v1.size());
 	for (size_t i = 0; i < v1.size(); i++) {
 		error[i] = v1[i] - v2[i];
 	}
@@ -97,12 +97,14 @@ std::vector<int16_t> computeError(const std::vector<int16_t>& v1, const std::vec
 	return error;
 }
 
-void writeRaw(const std::vector<int16_t>& data, const std::string& filename) {
+void writeRaw(const std::vector<int>& data, const std::string& filename) {
 	std::ofstream os(filename, std::ios::binary);
 	if (!os) {
 		throw 1;
 	}
-	os.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(int16_t));
+
+	std::vector<int16_t> buffer(data.begin(), data.end());
+	os.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(int16_t));
 }
 
 int main(int argc, char** argv) {
@@ -115,19 +117,19 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	std::vector<int16_t> original = loadData(is);
+	std::vector<int> original = loadData(is);
 	std::cout << "Original signal entropy: " << entropy(original) << std::endl;
-	std::vector<int16_t> qt(original);
+	std::vector<int> qt(original.begin(), original.end());
 	quantize(qt, 2600);
 	std::cout << "Quantized signal entropy: " << entropy(qt) << std::endl;
 	dequantize(qt, 2600);
 	writeRaw(qt, "output_qt.raw");
-	std::vector<int16_t> error = computeError(original, qt);
+	std::vector<int> error = computeError(original, qt);
 	writeRaw(error, "error_qt.raw");
 
 	const size_t N = 1024;
 	MDCT mdct(N);
-	std::vector<int16_t> transformed(original);
+	std::vector<int> transformed(original);
 	mdct.apply(transformed);
 	std::cout << "MDCT coefficient entropy: " << entropy(transformed) << std::endl;
 	quantize(transformed, 10000);
