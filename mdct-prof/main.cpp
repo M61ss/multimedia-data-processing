@@ -185,7 +185,7 @@ int main(void)
 	std::println("done.");
 	print_entropy("trans", trans);
 
-	int TQ = 20000;
+	int TQ = 10000;
 	auto qtrans = trans
 		| std::views::transform(
 			[TQ](int s) {

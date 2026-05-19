@@ -10,10 +10,11 @@ class MDCT {
 private:
 	std::vector<double> cos_;
 	std::vector<double> w_;
+	double recRatio_;
 	const size_t& N_;
 
 public:
-	MDCT(const size_t& N) : cos_(N * 2 * N), w_(N * 2), N_(N) {
+	MDCT(const size_t& N) : cos_(N * 2 * N), w_(N * 2), N_(N), recRatio_(2 / N) {
 		for (size_t k = 0; k < N; k++) {
 			for (size_t n = 0; n < N * 2; n++) {
 				cos_[k * N + n] = cos((std::numbers::pi / N) * (n + 0.5 + N / 2) * (k + 0.5));
@@ -43,10 +44,28 @@ public:
 				transformed[i + k] = static_cast<int>(round(Xk));
 			}
 		}
+		v = transformed;
 	}
 
 	void invert(std::vector<int>& v) {
+		std::vector<int> reconstructedBlocks(v.size() * 2);
+		for (size_t i = 0; i < v.size(); i += N_) {
+			for (size_t n = 0; n < N_ * 2; n++) {
+				double yn = recRatio_ * w_[n];
+				double sum = 0.0;
+				for (size_t k = 0; k < N_; k++) {
+					sum += v[i + k] * cos_[k * N_ + n];
+				}
+				reconstructedBlocks[i + n] = static_cast<int>(round(yn * sum));
+			}
+		}
 
+		v.resize(v.size() - N_ * 2);
+		for (size_t i = N_; i < v.size(); i += 2 * N_) {
+			for (size_t j = 0; j < N_; j++) {
+				v[i - N_] = reconstructedBlocks[i + j] + reconstructedBlocks[i + N_ + j];
+			}
+		}
 	}
 };
 
