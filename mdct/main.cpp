@@ -25,17 +25,13 @@ public:
 		}
 	}
 
-	void pad(std::vector<int>& v) {
-		while (v.size() % N_ != 0) {
-			v.push_back(0);
-		}
-	}
-
 	void apply(std::vector<int>& v) {
 		std::cout << "MDCT... ";
 		for (size_t i = 0; i < N_; i++) {
-			v.push_back(0);
 			v.insert(v.begin(), 0);
+		}
+		while (v.size() % N_ != 0) {
+			v.push_back(0);
 		}
 		
 		std::vector<int> transformed(v.size());
@@ -43,7 +39,7 @@ public:
 			for (size_t k = 0; k < N_; k++) {
 				double Xk = 0.0;
 				for (size_t n = 0; n < N_ * 2; n++) {
-					Xk += v[i + n] * w_[n] * cos_[k * N_ + n];
+					Xk += v[i + n] * w_[n] * cos_[k * 2 * N_ + n];
 				}
 				transformed[i + k] = static_cast<int>(round(Xk));
 			}
@@ -60,7 +56,7 @@ public:
 				double yn = recRatio_ * w_[n];
 				double sum = 0.0;
 				for (size_t k = 0; k < N_; k++) {
-					sum += v[i + k] * cos_[k * N_ + n];
+					sum += v[i + k] * cos_[k * 2 * N_ + n];
 				}
 				reconstructed[i + n] += static_cast<int>(round(yn * sum));
 			}
@@ -153,7 +149,6 @@ int main(int argc, char** argv) {
 
 	const size_t N = 1024;
 	MDCT mdct(N);
-	mdct.pad(original);
 	std::vector<int> transformed(original);
 	mdct.apply(transformed);
 	std::cout << "MDCT coefficient entropy: " << entropy(transformed) << std::endl;
