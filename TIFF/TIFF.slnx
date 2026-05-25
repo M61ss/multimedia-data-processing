@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="TIFF.vcxproj" />
+  <Project Path="TIFF.vcxproj" Id="97c9979f-50cf-4280-b897-ae1905d0bfec" />
 </Solution>

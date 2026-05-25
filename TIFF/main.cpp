@@ -1,5 +1,6 @@
 #include <vector>
 #include <fstream>
+#include <map>
 
 class Image {
 private:
@@ -39,6 +40,26 @@ Image readTIFF(std::istream& is) {
 	size_t IFDoffset = 0;
 	is.read(reinterpret_cast<char*>(&IFDoffset), 4);
 	is.seekg(IFDoffset);
+
+	std::map<size_t, size_t> fields;
+	while (IFDoffset != 0) {
+		size_t tag = 0;
+		is.read(reinterpret_cast<char*>(&tag), 2);
+
+		size_t type = 0;
+		is.read(reinterpret_cast<char*>(&type), 2);
+
+		switch (tag) {
+		case 256 || 257:
+			if (type == 3) {
+				is.read(reinterpret_cast<char*>(&fields[tag]), 2);
+			}
+			else if (type == 4) {
+				is.read(reinterpret_cast<char*>(&fields[tag]), 4);
+			}
+			break;
+		}
+	}
 
 	return img;
 }
