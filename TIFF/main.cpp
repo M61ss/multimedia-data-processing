@@ -1,6 +1,6 @@
 #include <vector>
 #include <fstream>
-#include <map>
+#include <algorithm>
 
 class Image {
 private:
@@ -59,7 +59,27 @@ Image readTIFF(std::istream& is) {
 		is.read(reinterpret_cast<char*>(&entry.type_), sizeof(entry.type_));
 		is.read(reinterpret_cast<char*>(&entry.count_), sizeof(entry.count_));
 		is.read(reinterpret_cast<char*>(&entry.valueOffset_), sizeof(entry.valueOffset_));
+		entries.push_back(entry);
 	}
+
+	size_t width, height;
+	for (const auto& entry : entries) {
+		if (entry.type_ == 256) {
+			width = entry.valueOffset_;
+		}
+		else if (entry.type_ == 257) {
+			height = entry.valueOffset_;
+		}
+		else if (entry.count_ > 4 || entry.type_ > 5 || (entry.count_ > 2 && entry.type_ > 2) || (entry.count_ > 1 && entry.type_ > 3)) {
+			is.seekg(entry.valueOffset_);
+			// ...
+		}
+	}
+	Image img(width, height);
+
+	is.read(reinterpret_cast<char*>(&IFDoffset), 4);
+
+	return img;
 }
 
 void savePAM(std::ostream& os, const Image& img) {
