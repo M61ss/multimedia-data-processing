@@ -10,6 +10,7 @@ private:
 
 public:
 	Image() : width_(-1), height_(-1) {}
+	Image(const size_t& width, const size_t& height) : width_(width), height_(height), data_(width * height) {}
 
 	const uint8_t& operator()(const size_t& i, const size_t& j) const {
 		return data_[i * width_ + j];
@@ -23,45 +24,42 @@ public:
 	const std::vector<uint8_t>& data() const { return data_; }
 };
 
+struct TIFFentry {
+	int16_t tag_;
+	int16_t type_;
+	int32_t count_;
+	int32_t valueOffset_;
+};
+
 Image readTIFF(std::istream& is) {
-	Image img;
 	std::string byteOrder(2, '\0');
 	is.read(byteOrder.data(), 2);
 	if (byteOrder != "II") {
-		return img;
+		return Image();
 	}
 
 	size_t n = 0;
 	is.read(reinterpret_cast<char*>(&n), 2);
 	if (n != 42) {
-		return img;
+		return Image();
 	}
 
 	size_t IFDoffset = 0;
 	is.read(reinterpret_cast<char*>(&IFDoffset), 4);
 	is.seekg(IFDoffset);
 
-	std::map<size_t, size_t> fields;
-	while (IFDoffset != 0) {
-		size_t tag = 0;
-		is.read(reinterpret_cast<char*>(&tag), 2);
+	size_t numEntries = 0;
+	is.read(reinterpret_cast<char*>(&numEntries), 2);
 
-		size_t type = 0;
-		is.read(reinterpret_cast<char*>(&type), 2);
+	std::vector<TIFFentry> entries;
+	for (size_t i = 0; i < numEntries; i++) {
+		TIFFentry entry;
 
-		switch (tag) {
-		case 256 || 257:
-			if (type == 3) {
-				is.read(reinterpret_cast<char*>(&fields[tag]), 2);
-			}
-			else if (type == 4) {
-				is.read(reinterpret_cast<char*>(&fields[tag]), 4);
-			}
-			break;
-		}
+		is.read(reinterpret_cast<char*>(&entry.tag_), sizeof(entry.tag_));
+		is.read(reinterpret_cast<char*>(&entry.type_), sizeof(entry.type_));
+		is.read(reinterpret_cast<char*>(&entry.count_), sizeof(entry.count_));
+		is.read(reinterpret_cast<char*>(&entry.valueOffset_), sizeof(entry.valueOffset_));
 	}
-
-	return img;
 }
 
 void savePAM(std::ostream& os, const Image& img) {
