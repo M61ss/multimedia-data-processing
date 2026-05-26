@@ -22,11 +22,14 @@ public:
 	const size_t& width() const { return width_; }
 	const size_t& height() const { return height_; }
 	const std::vector<uint8_t>& data() const { return data_; }
+
+	std::vector<uint8_t>& data() { return data_; }
 };
 
 struct TIFFentry {
 	int16_t tag_;
 	int16_t type_;
+	size_t valueSize_;
 	int32_t count_;
 	int32_t valueOffset_;
 };
@@ -56,34 +59,49 @@ Image readTIFF(std::istream& is) {
 		TIFFentry entry;
 
 		is.read(reinterpret_cast<char*>(&entry.tag_), sizeof(entry.tag_));
+		
 		is.read(reinterpret_cast<char*>(&entry.type_), sizeof(entry.type_));
+		switch (entry.type_) {
+		break; case 1: entry.valueSize_ = 1;
+		break; case 2: entry.valueSize_ = 1;
+		break; case 3: entry.valueSize_ = 2;
+		break; case 4: entry.valueSize_ = 4;
+		}
+
 		is.read(reinterpret_cast<char*>(&entry.count_), sizeof(entry.count_));
+		
 		is.read(reinterpret_cast<char*>(&entry.valueOffset_), sizeof(entry.valueOffset_));
+		
 		entries.push_back(entry);
 	}
 
-	size_t width, height;
+	size_t width, height, dataOffset = 0;
 	for (const auto& entry : entries) {
-		if (entry.type_ == 256) {
+		if (entry.tag_ == 256) {
 			width = entry.valueOffset_;
 		}
-		else if (entry.type_ == 257) {
+		else if (entry.tag_ == 257) {
 			height = entry.valueOffset_;
 		}
-		else if (entry.count_ > 4 || entry.type_ > 5 || (entry.count_ > 2 && entry.type_ > 2) || (entry.count_ > 1 && entry.type_ > 3)) {
+		else if ((entry.count_ * entry.valueSize_) > 4) {
 			is.seekg(entry.valueOffset_);
-			// ...
+
+			// read values
+			
+			size_t currOffset = entry.valueOffset_ + entry.count_ * entry.valueSize_;
+			dataOffset = std::max(dataOffset, currOffset);
 		}
 	}
-	Image img(width, height);
+	is.seekg(dataOffset);
 
-	is.read(reinterpret_cast<char*>(&IFDoffset), 4);
+	Image img(width, height);
+	is.read(reinterpret_cast<char*>(img.data().data()), width * height);
 
 	return img;
 }
 
 void savePAM(std::ostream& os, const Image& img) {
-	os << "P7"
+	os << "P7\n"
 		<< "WIDTH " << img.width() << "\n"
 		<< "HEIGHT " << img.height() << "\n"
 		<< "DEPTH 1\n"
@@ -108,6 +126,7 @@ int main(int argc, char** argv) {
 	}
 
 	Image img = readTIFF(is);
+	savePAM(os, img);
 
 	return 0;
 }
