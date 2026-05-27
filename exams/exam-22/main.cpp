@@ -81,8 +81,8 @@ Image loadWebP(std::istream& is) {
 	eatByte(is, 1);	// 0x2F
 
 	BitReader br(is);
-	size_t width = br.readSequence(14);
-	size_t height = br.readSequence(14);
+	size_t width = br.readSequence(14) + 1;
+	size_t height = br.readSequence(14) + 1;
 	Image img(width, height);
 
 	return img;
