@@ -89,6 +89,7 @@ Image loadWebP(std::istream& is) {
 	size_t transforms = br.readSequence(1);
 	size_t colorcache = br.readSequence(1);
 	size_t metaprefix = br.readSequence(1);
+	size_t version = br.readSequence(3);
 
 	return img;
 }
