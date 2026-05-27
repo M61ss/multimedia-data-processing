@@ -29,7 +29,7 @@ struct RecordInfoEntry {
 	uint32_t uniqueID_;
 };
 
-struct Record {
+struct PalmDOCHeader {
 	uint16_t compression_ = 0;
 	uint16_t unused_ = 0;
 	uint32_t textLength_ = 0;
@@ -37,7 +37,6 @@ struct Record {
 	uint16_t recordSize_ = 0;
 	uint16_t encryptionType_ = 0;
 	uint16_t unknow_ = 0;
-	std::vector<uint8_t> data_;
 };
 
 class MOBIDecoder {
@@ -46,27 +45,28 @@ private:
 	std::ostream& os_;
 	PDBHeader hdr_;
 	std::vector<RecordInfoEntry> ries_;
-	std::vector<Record> records_;
+	PalmDOCHeader pdochdr_;
+	std::vector<uint8_t> data_;
 
-	void readPalmDOCHeader(Record& rcd) {
-		is_.read(reinterpret_cast<char*>(&rcd.compression_), 2);
-		rcd.compression_ = std::byteswap(rcd.compression_);
-		is_.read(reinterpret_cast<char*>(&rcd.unused_), 2);
-		rcd.unused_ = std::byteswap(rcd.unused_);
-		is_.read(reinterpret_cast<char*>(&rcd.textLength_), 4);
-		rcd.textLength_ = std::byteswap(rcd.textLength_);
-		is_.read(reinterpret_cast<char*>(&rcd.recordCount_), 2);
-		rcd.recordCount_ = std::byteswap(rcd.recordCount_);
-		is_.read(reinterpret_cast<char*>(&rcd.recordSize_), 2);
-		rcd.recordSize_ = std::byteswap(rcd.recordSize_);
-		is_.read(reinterpret_cast<char*>(&rcd.encryptionType_), 2);
-		rcd.encryptionType_ = std::byteswap(rcd.encryptionType_);
-		is_.read(reinterpret_cast<char*>(&rcd.unknow_), 2);
-		rcd.unknow_ = std::byteswap(rcd.unknow_);
+	void readPalmDOCHeader() {
+		is_.read(reinterpret_cast<char*>(&pdochdr_.compression_), 2);
+		pdochdr_.compression_ = std::byteswap(pdochdr_.compression_);
+		is_.read(reinterpret_cast<char*>(&pdochdr_.unused_), 2);
+		pdochdr_.unused_ = std::byteswap(pdochdr_.unused_);
+		is_.read(reinterpret_cast<char*>(&pdochdr_.textLength_), 4);
+		pdochdr_.textLength_ = std::byteswap(pdochdr_.textLength_);
+		is_.read(reinterpret_cast<char*>(&pdochdr_.recordCount_), 2);
+		pdochdr_.recordCount_ = std::byteswap(pdochdr_.recordCount_);
+		is_.read(reinterpret_cast<char*>(&pdochdr_.recordSize_), 2);
+		pdochdr_.recordSize_ = std::byteswap(pdochdr_.recordSize_);
+		is_.read(reinterpret_cast<char*>(&pdochdr_.encryptionType_), 2);
+		pdochdr_.encryptionType_ = std::byteswap(pdochdr_.encryptionType_);
+		is_.read(reinterpret_cast<char*>(&pdochdr_.unknow_), 2);
+		pdochdr_.unknow_ = std::byteswap(pdochdr_.unknow_);
 	}
 
 public:
-	MOBIDecoder(std::istream& is, std::ostream& os) : is_(is), os_(os), hdr_(), ries_(), records_() {}
+	MOBIDecoder(std::istream& is, std::ostream& os) : is_(is), os_(os), hdr_(), ries_(), pdochdr_() {}
 
 	void readHeader() {
 		is_.read(hdr_.name_.data(), 32);
@@ -97,9 +97,7 @@ public:
 	}
 
 	void printHeader() {
-		size_t BOM = 0xBFBBEF;
-		os_.write(reinterpret_cast<const char*>(&BOM), 3);
-		os_ << "PDB name: " << hdr_.name_ << "\n"
+		std::cout << "PDB name: " << hdr_.name_ << "\n"
 			<< "Creation date (s): " << hdr_.creationDate_ << "\n"
 			<< "Type: " << hdr_.type_ << "\n"
 			<< "Creator: " << hdr_.creator_ << "\n"
@@ -122,28 +120,28 @@ public:
 
 	void printRecordInfoEntries() {
 		for (size_t i = 0; i < ries_.size(); i++) {
-			os_ << i << " - offset: " << ries_[i].recordDataOffset_ << " - id: " << ries_[i].uniqueID_ << "\n";
+			std::cout << i << " - offset: " << ries_[i].recordDataOffset_ << " - id: " << ries_[i].uniqueID_ << "\n";
 		}
-		os_ << "\n";
+		std::cout << "\n";
 	}
 
-	void readRecord(const size_t& n) {
-		is_.seekg(ries_[n].recordDataOffset_);
-		Record rcd;
-		readPalmDOCHeader(rcd);
+	void readRecords() {
+		is_.seekg(ries_[0].recordDataOffset_);
+		readPalmDOCHeader();
 
-		for (uint16_t i = 0; i < rcd.recordCount_; i++) {
+		for (uint16_t i = 1; i <= pdochdr_.recordCount_; i++) {
+			is_.seekg(ries_[i].recordDataOffset_);
 			uint8_t checkByte;
-			while ((checkByte = is_.get()) != 0x00 || rcd.data_.size() == rcd.textLength_) {
+			while ((checkByte = is_.get()) != 0x00 && data_.size() < pdochdr_.textLength_) {
 				if (checkByte >= 0x01 && checkByte <= 0x08) {
-					std::vector<uint8_t> asIs(8);
-					is_.read(reinterpret_cast<char*>(asIs.data()), 8);
+					std::vector<uint8_t> asIs(checkByte);
+					is_.read(reinterpret_cast<char*>(asIs.data()), checkByte);
 					for (const auto& byte : asIs) {
-						rcd.data_.push_back(byte);
+						data_.push_back(byte);
 					}
 				}
 				else if (checkByte >= 0x09 && checkByte <= 0x7F) {
-					rcd.data_.push_back(checkByte);
+					data_.push_back(checkByte);
 				}
 				else if (checkByte >= 0x80 && checkByte <= 0xBF) {
 					uint16_t buffer = checkByte;
@@ -152,34 +150,33 @@ public:
 					uint16_t distance = buffer & 0b0011111111111000;
 					distance >>= 3;
 					uint8_t length = (buffer & 0x0007) + 3;
-					auto range = rcd.data_.end() - distance;
+					size_t pos = data_.size() - distance;
 					for (size_t i = 0; i < length; i++) {
-						rcd.data_.push_back(*range);
-						++range;
+						data_.push_back(data_[pos + i]);
 					}
 				}
 				else {
-					rcd.data_.push_back(20);
-					rcd.data_.push_back(checkByte & 0x7F);
+					data_.push_back(' ');
+					data_.push_back(checkByte & 0x7F);
 				}
 
-				if ((rcd.data_.size() % 4096) == 0) {
+				if ((data_.size() % 4096) == 0) {
 					break;
 				}
 			}
 		}
-
-		records_.push_back(rcd);
 	}
 
-	void printRecord(const size_t& n) {
-		os_ << "Compression: " << records_[n].compression_ << "\n"
-			<< "TextLength: " << records_[n].textLength_ << "\n"
-			<< "RecordCount: " << records_[n].recordCount_ << "\n"
-			<< "RecordSize: " << records_[n].recordSize_ << "\n"
-			<< "EncryptionType: " << records_[n].encryptionType_ << "\n"
+	void printData() {
+		std::cout << "Compression: " << pdochdr_.compression_ << "\n"
+			<< "TextLength: " << pdochdr_.textLength_ << "\n"
+			<< "RecordCount: " << pdochdr_.recordCount_ << "\n"
+			<< "RecordSize: " << pdochdr_.recordSize_ << "\n"
+			<< "EncryptionType: " << pdochdr_.encryptionType_ << "\n"
 			<< "\n";
-		os_.write(reinterpret_cast<const char*>(records_[n].data_.data()), records_[n].data_.size());
+		size_t BOM = 0xBFBBEF;
+		os_.write(reinterpret_cast<const char*>(&BOM), 3);
+		os_.write(reinterpret_cast<const char*>(data_.data()), data_.size());
 	}
 };
 
@@ -202,8 +199,8 @@ int main(int argc, char** argv) {
 	md.printHeader();
 	md.readRecordInfoEntries();
 	md.printRecordInfoEntries();
-	md.readRecord(0);
-	md.printRecord(0);
+	md.readRecords();
+	md.printData();
 
 	return 0;
 }
