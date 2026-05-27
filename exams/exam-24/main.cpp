@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 
 struct PDBheader {
 	std::string name_;
@@ -41,6 +42,16 @@ PDBheader readHeader(std::istream& is) {
 	return hdr;
 }
 
+void printHeader(std::ostream& os, const PDBheader& hdr) {
+	os << 0xEF << 0xBB << 0xBF
+		<< "PDB name: " << hdr.name_ << "\n"
+		<< "Creation date (s): " << hdr.creationDate_ << "\n"
+		<< "Type: " << hdr.type_ << "\n"
+		<< "Creator: " << hdr.creator_ << "\n"
+		<< "Records: " << hdr.numberOfRecords_ << "\n"
+		<< "\n";
+}
+
 int main(int argc, char** argv) {
 	if (argc != 3) {
 		return 1;
@@ -56,6 +67,7 @@ int main(int argc, char** argv) {
 	}
 
 	PDBheader hdr = readHeader(is);
+	printHeader(os, hdr);
 
 	return 0;
 }
