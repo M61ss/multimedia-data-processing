@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 struct PDBheader {
 	std::string name_;
@@ -21,36 +22,68 @@ struct PDBheader {
 	PDBheader() : name_(32, 0), type_(4, 0), creator_(4, 0) {}
 };
 
-PDBheader readHeader(std::istream& is) {
-	PDBheader hdr;
-	is.read(hdr.name_.data(), 32);
-	is.read(reinterpret_cast<char*>(&hdr.attr1_), 1);
-	is.read(reinterpret_cast<char*>(&hdr.attr2_), 1);
-	is.read(reinterpret_cast<char*>(&hdr.version_), 2);
-	is.read(reinterpret_cast<char*>(&hdr.creationDate_), 4);
-	is.read(reinterpret_cast<char*>(&hdr.modificationDate_), 4);
-	is.read(reinterpret_cast<char*>(&hdr.lastBackupDate_), 4);
-	is.read(reinterpret_cast<char*>(&hdr.modificationNumber_), 4);
-	is.read(reinterpret_cast<char*>(&hdr.appInfoID_), 4);
-	is.read(reinterpret_cast<char*>(&hdr.sortInfoID_), 4);
-	is.read(hdr.type_.data(), 4);
-	is.read(hdr.creator_.data(), 4);
-	is.read(reinterpret_cast<char*>(&hdr.uniqueIDseed_), 4);
-	is.read(reinterpret_cast<char*>(&hdr.nextRecordListID_), 4);
-	is.read(reinterpret_cast<char*>(&hdr.numberOfRecords_), 2);
+struct RecordInfoEntry {
+	uint32_t recordDataOffset_;
+	uint8_t recordAttributes_;
+	uint32_t uniqueID_;
+};
 
-	return hdr;
-}
+class MOBIdecoder {
+private:
+	std::istream& is_;
+	std::ostream& os_;
+	PDBheader hdr_;
+	std::vector<RecordInfoEntry> ries_;
 
-void printHeader(std::ostream& os, const PDBheader& hdr) {
-	os << 0xEF << 0xBB << 0xBF
-		<< "PDB name: " << hdr.name_ << "\n"
-		<< "Creation date (s): " << hdr.creationDate_ << "\n"
-		<< "Type: " << hdr.type_ << "\n"
-		<< "Creator: " << hdr.creator_ << "\n"
-		<< "Records: " << hdr.numberOfRecords_ << "\n"
-		<< "\n";
-}
+public:
+	MOBIdecoder(std::istream& is, std::ostream& os) : is_(is), os_(os), hdr_(), ries_() {}
+
+	void readHeader() {
+		is_.read(hdr_.name_.data(), 32);
+		is_.read(reinterpret_cast<char*>(&hdr_.attr1_), 1);
+		is_.read(reinterpret_cast<char*>(&hdr_.attr2_), 1);
+		is_.read(reinterpret_cast<char*>(&hdr_.version_), 2);
+		is_.read(reinterpret_cast<char*>(&hdr_.creationDate_), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.modificationDate_), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.lastBackupDate_), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.modificationNumber_), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.appInfoID_), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.sortInfoID_), 4);
+		is_.read(hdr_.type_.data(), 4);
+		is_.read(hdr_.creator_.data(), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.uniqueIDseed_), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.nextRecordListID_), 4);
+		is_.read(reinterpret_cast<char*>(&hdr_.numberOfRecords_), 2);
+	}
+
+	void printHeader() {
+		os_ << 0xEF << 0xBB << 0xBF
+			<< "PDB name: " << hdr_.name_ << "\n"
+			<< "Creation date (s): " << hdr_.creationDate_ << "\n"
+			<< "Type: " << hdr_.type_ << "\n"
+			<< "Creator: " << hdr_.creator_ << "\n"
+			<< "Records: " << hdr_.numberOfRecords_ << "\n"
+			<< "\n";
+	}
+
+	void readRecordInfoEntries() {
+		for (uint16_t i = 0; i < hdr_.numberOfRecords_; i++) {
+			RecordInfoEntry rie;
+			is_.read(reinterpret_cast<char*>(&rie.recordDataOffset_), 4);
+			is_.read(reinterpret_cast<char*>(&rie.recordAttributes_), 1);
+			is_.read(reinterpret_cast<char*>(&rie.uniqueID_), 3);
+			ries_.push_back(rie);
+		}
+	}
+
+	void printRecordInfoEntries() {
+		for (size_t i = 0; i < ries_.size(); i++) {
+			os_ << i << " - offset: " << ries_[i].recordDataOffset_ << " - id: " << ries_[i].uniqueID_ << "\n";
+		}
+		os_ << "\n";
+	}
+};
+
 
 int main(int argc, char** argv) {
 	if (argc != 3) {
@@ -66,8 +99,11 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	PDBheader hdr = readHeader(is);
-	printHeader(os, hdr);
+	MOBIdecoder md(is, std::cout);
+	md.readHeader();
+	md.printHeader();
+	md.readRecordInfoEntries();
+	md.printRecordInfoEntries();
 
 	return 0;
 }
