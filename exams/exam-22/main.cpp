@@ -33,13 +33,15 @@ private:
 	uint8_t buffer_;
 	size_t n_;
 
-	uint8_t readBit() {
+	size_t readBit() {
 		if (n_ == 0) {
 			is_.read(reinterpret_cast<char*>(&buffer_), 1);
 			n_ = 8;
 		}
+		size_t bit = buffer_ & 1;
+		buffer_ >>= 1;
 		--n_;
-		return (buffer_ >> n_) & 1;
+		return bit;
 	}
 public:
 	BitReader(std::istream& is) : is_(is), buffer_(0), n_(0) {}
@@ -47,7 +49,7 @@ public:
 	size_t readSequence(const size_t& len) {
 		size_t val = 0;
 		for (size_t i = 0; i < len; i++) {
-			val = (val << 1) | readBit();
+			val |= readBit() << i;
 		}
 		return val;
 	}
@@ -84,6 +86,9 @@ Image loadWebP(std::istream& is) {
 	size_t width = br.readSequence(14) + 1;
 	size_t height = br.readSequence(14) + 1;
 	Image img(width, height);
+	size_t transforms = br.readSequence(1);
+	size_t colorcache = br.readSequence(1);
+	size_t metaprefix = br.readSequence(1);
 
 	return img;
 }
