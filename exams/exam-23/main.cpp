@@ -52,8 +52,16 @@ private:
 
 	LMSState readLMSState() {
 		LMSState lms;
-		is_.read(reinterpret_cast<char*>(lms.history_.data()), 4 * 2);
-		is_.read(reinterpret_cast<char*>(lms.weights_.data()), 4 * 2);
+		for (size_t i = 0; i < 4; i++) {
+			int16_t hist = 0;
+			is_.read(reinterpret_cast<char*>(&hist), 2);
+			lms.history_[i] = std::byteswap(hist);
+		}
+		for (size_t i = 0; i < 4; i++) {
+			int16_t weight = 0;
+			is_.read(reinterpret_cast<char*>(&weight), 2);
+			lms.weights_[i] = std::byteswap(weight);
+		}
 
 		return lms;
 	}
