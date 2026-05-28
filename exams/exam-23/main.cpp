@@ -1,6 +1,7 @@
 #include <fstream>
 #include <vector>
 #include <bit>
+#include <cmath>
 
 struct FileHeader {
 	std::string magicNumber_;
@@ -113,7 +114,7 @@ public:
 
 	void decode() {
 		readFileHeader();
-		const size_t frameNumber = static_cast<size_t>(std::ceil(fileHdr_.samplesPerChannel_ / (256 * 20)));
+		const size_t frameNumber = static_cast<size_t>(ceil(fileHdr_.samplesPerChannel_ / (256 * 20)));
 
 		for (size_t i = 0; i < frameNumber; i++) {
 			FrameHeader frameHdr = readFrameHeader();
