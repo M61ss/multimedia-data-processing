@@ -167,7 +167,7 @@ void saveWAV(std::ostream& os, const QOADecoder& qoa) {
 	size_t dataSize = qoa.data().size() * 2;
 	os.write(reinterpret_cast<const char*>(&dataSize), 4);
 
-	os.write(reinterpret_cast<const char*>(qoa.data().data()), 2 * qoa.data().size());
+	os.write(reinterpret_cast<const char*>(qoa.data().data()), dataSize);
 
 	fileSize = os.tellp();
 	os.seekp(4);
