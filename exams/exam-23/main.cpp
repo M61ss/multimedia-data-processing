@@ -114,9 +114,8 @@ public:
 
 	void decode() {
 		readFileHeader();
-		const size_t frameNumber = static_cast<size_t>(ceil(fileHdr_.samplesPerChannel_ / (256 * 20)));
 
-		for (size_t i = 0; i < frameNumber; i++) {
+		while (is_) {
 			FrameHeader frameHdr = readFrameHeader();
 
 			std::vector<LMSState> lms(frameHdr.nChannels_);
