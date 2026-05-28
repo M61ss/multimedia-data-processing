@@ -73,7 +73,8 @@ private:
 		uint8_t shift = 57;
 		std::vector<uint8_t> qr;
 		for (size_t i = 0; i < 20; i++) {
-			qr.push_back(static_cast<uint8_t>((slice & mask) >> shift));
+			uint8_t q = static_cast<uint8_t>((slice & mask) >> shift);
+			qr.push_back(q);
 			mask >>= 3;
 			shift -= 3;
 		}
