@@ -2,6 +2,7 @@
 #include <vector>
 #include <bit>
 #include <cmath>
+#include <algorithm>
 
 struct FileHeader {
 	std::string magicNumber_;
@@ -90,12 +91,7 @@ private:
 			}
 			p >>= 13;
 			int16_t s = p + r;
-			if (s > 32767) {
-				s = 32767;
-			}
-			else if (s < -32768) {
-				s = -32768;
-			}
+			s = std::clamp(s, static_cast<int16_t>(-32768), static_cast<int16_t>(32767));
 			data_.push_back(s);
 
 			int16_t delta = r >> 4;
