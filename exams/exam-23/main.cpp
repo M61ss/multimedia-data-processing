@@ -124,8 +124,8 @@ public:
 				lms[c] = readLMSState();
 			}
 			
-			for (size_t c = 0; c < frameHdr.nChannels_; c++) {
-				for (size_t s = 0; s < 256; s++) {
+			for (size_t s = 0; s < frameHdr.frameSamples_ / 20; s++) {
+				for (size_t c = 0; c < frameHdr.nChannels_; c++) {
 					uint64_t slice = 0;
 					is_.read(reinterpret_cast<char*>(&slice), 8);
 					slice = std::byteswap(slice);
