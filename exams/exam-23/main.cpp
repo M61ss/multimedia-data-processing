@@ -146,7 +146,7 @@ public:
 
 void saveWAV(std::ostream& os, const QOADecoder& qoa) {
 	os << "RIFF";
-	size_t fileSize = 36 + qoa.data().size();
+	size_t fileSize = 0;
 	os.write(reinterpret_cast<const char*>(&fileSize), 4);
 	os << "WAVE" << "fmt ";
 	int32_t length = 16;
@@ -164,10 +164,14 @@ void saveWAV(std::ostream& os, const QOADecoder& qoa) {
 	uint16_t bitPerSample = 16;
 	os.write(reinterpret_cast<const char*>(&bitPerSample), 2);
 	os << "data";
-	size_t dataSize = qoa.data().size();
+	size_t dataSize = qoa.data().size() * 2;
 	os.write(reinterpret_cast<const char*>(&dataSize), 4);
 
 	os.write(reinterpret_cast<const char*>(qoa.data().data()), 2 * qoa.data().size());
+
+	fileSize = os.tellp();
+	os.seekp(4);
+	os.write(reinterpret_cast<const char*>(&fileSize), 4);
 }
 
 int main(int argc, char** argv) {
