@@ -69,7 +69,7 @@ private:
 	}
 
 	std::vector<uint8_t> extractSamples(const uint64_t& slice) {
-		uint64_t mask = 0b0000111000000000000000000000000000000000000000000000000000000000;
+		uint64_t mask = 0b00001110'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
 		uint8_t shift = 57;
 		std::vector<uint8_t> qr;
 		for (size_t i = 0; i < 20; i++) {
