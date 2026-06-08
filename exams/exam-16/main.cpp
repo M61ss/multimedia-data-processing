@@ -1,5 +1,6 @@
 #include <vector>
 #include <fstream>
+#include <cstdint>
 
 template <typename T>
 bool rawRead(T* val, std::istream& is, const size_t& length) {
@@ -57,7 +58,7 @@ private:
 	}
 
 	void readMatch() {
-		uint16_t offset = 0;
+		size_t offset = 0;
 		rawRead(&offset, is_, 2);
 		blockCursor_ += 2;
 		if (uint8_t additional = 0; matchLength_ == 19) {
@@ -67,8 +68,10 @@ private:
 				matchLength_ += additional;
 			} while (additional == 255);
 		}
-		for (uint16_t i = offset; i < offset + matchLength_; i++) {
-			data_.push_back(data_[i % offset]);
+		offset = data_.size() - offset;
+		size_t dictLength = data_.size() - offset;
+		for (uint32_t i = 0; i < matchLength_; i++) {
+			data_.push_back(data_[offset + (i % dictLength)]);
 		}
 	}
 
