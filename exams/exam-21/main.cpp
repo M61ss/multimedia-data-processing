@@ -56,19 +56,17 @@ public:
 		rawWrite(&img.cols(), os, 4);
 		rawWrite(&img.rows(), os, 4);
 
-		for (size_t i = 0; i < img.rows(); i += 8) {
-			for (size_t j = 0; j < img.cols(); j += 8) {
-				std::map<uint8_t, std::vector<uint8_t>> block;
-				for (size_t bi = 0; bi < 8 && i + bi < img.rows(); bi++) {
-					for (size_t bj = 0; bj < 8 && bj + j < img.cols(); bj++) {
-						block[mask_(bi, bj)].push_back(img(i + bi, j + bj));
-					}
-				}
-
-				for (const auto& [level, pixels] : block) {
-					rawWrite(pixels.data(), os, pixels.size());
+		std::map<uint8_t, std::vector<uint8_t>> mlt;
+		for (size_t rowIdx = 0; rowIdx < img.rows(); rowIdx += 8) {
+			for (size_t i = 0; i < 8 && i + rowIdx < img.rows(); i++) {
+				for (size_t j = 0; j < img.cols(); j++) {
+					mlt[mask_(i % 8, j % 8)].push_back(img(i + rowIdx, j));
 				}
 			}
+		}
+
+		for (const auto& [level, pixels] : mlt) {
+			rawWrite(pixels.data(), os, pixels.size());
 		}
 
 		return 0;
