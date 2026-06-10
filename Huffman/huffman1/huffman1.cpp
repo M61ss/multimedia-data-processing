@@ -86,7 +86,7 @@ public:
 
 		for (size_t i = 0; i < numSymbols_; i++) {
 			size_t code = 0;
-			for (uint8_t len = 1; len <= 32; i++) {
+			for (uint8_t len = 1; len <= 32; len++) {
 				code = (code << 1) | br_.readSequence(1);
 				auto it = lookupTable.find({len, code});
 				if (it != lookupTable.end()) {
