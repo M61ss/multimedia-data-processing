@@ -116,11 +116,9 @@ public:
 		rawWrite(&img.rows(), os, 4);
 
 		std::map<uint8_t, std::vector<uint8_t>> mlt;
-		for (size_t rowIdx = 0; rowIdx < img.rows(); rowIdx += 8) {
-			for (size_t i = 0; i < 8 && i + rowIdx < img.rows(); i++) {
-				for (size_t j = 0; j < img.cols(); j++) {
-					mlt[mask_(i % 8, j % 8)].push_back(img(i + rowIdx, j));
-				}
+		for (size_t i = 0; i < img.rows(); i++) {
+			for (size_t j = 0; j < img.cols(); j++) {
+				mlt[mask_(i % 8, j % 8)].push_back(img(i, j));
 			}
 		}
 
@@ -133,7 +131,6 @@ public:
 
 	int decompress(const std::string& prefix, std::istream& is) {
 		MLTHeader mltHdr;
-		std::map<uint8_t, std::vector<uint8_t>> mlt;
 		rawRead(mltHdr.magicNumber_.data(), is, 8);
 		if (mltHdr.magicNumber_ != "MULTIRES") {
 			return 1;
@@ -141,27 +138,27 @@ public:
 		rawRead(&mltHdr.width_, is, 4);
 		rawRead(&mltHdr.height_, is, 4);
 
-		size_t nOne = (mltHdr.height_ * mltHdr.width_ + 63) / 64;
+		std::map<uint8_t, size_t> levelCount;
+		for (size_t i = 0; i < mltHdr.height_; i++) {
+			for (size_t j = 0; j < mltHdr.width_; j++) {
+				levelCount[mask_(i % 8, j % 8)]++;
+			}
+		}
 
-		mlt[1].resize(nOne);
-		mlt[2].resize(nOne);
-		mlt[3].resize(nOne * 2);
-		mlt[4].resize(nOne * 4);
-		mlt[5].resize(nOne * 8);
-		mlt[6].resize(nOne * 16);
-		mlt[7].resize(nOne * 32);
-
+		std::map<uint8_t, std::vector<uint8_t>> mlt;
 		std::map<uint8_t, Image> rec;
-		for (auto& [level, values] : mlt) {
-			rawRead(values.data(), is, values.size());
-			std::reverse(values.begin(), values.end());
+		for (auto& [level, count] : levelCount) {
+			mlt[level].resize(count);
+			rawRead(mlt[level].data(), is, mlt[level].size());
+			std::reverse(mlt[level].begin(), mlt[level].end());
 			rec[level] = Image(mltHdr.height_, mltHdr.width_);
 		}
 
 		for (size_t i = 0; i < mltHdr.height_; i++) {
 			for (size_t j = 0; j < mltHdr.width_; j++) {
-				rec[7](i, j) = mlt[mask_(i % 8, j % 8)].back();
-				mlt[mask_(i % 8, j % 8)].pop_back();
+				uint8_t level = mask_(i % 8, j % 8);
+				rec[7](i, j) = mlt[level].back();
+				mlt[level].pop_back();
 			}
 		}
 
