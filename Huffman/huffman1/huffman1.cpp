@@ -78,16 +78,19 @@ public:
 	}
 
 	void readData() {
+		std::map<std::pair<uint8_t, size_t>, uint8_t> lookupTable;
+		for (const auto& [len, repr] : huffmanTable_) {
+			const auto& [sym, code] = repr;
+			lookupTable[{len, code}] = sym;
+		}
+
 		for (size_t i = 0; i < numSymbols_; i++) {
 			size_t buffer = 0;
-			uint8_t alreadyRead = 0;
-			for (const auto& [len, repr] : huffmanTable_) {
-				const auto& [sym, code] = repr;
-				uint8_t toBeRead = len - alreadyRead;
-				buffer = (buffer << toBeRead) | br_.readSequence(toBeRead);
-				alreadyRead += toBeRead;
-				if (buffer == code) {
-					data_.push_back(sym);
+			for (uint8_t len = 1; len <= 32; len++) {
+				buffer = (buffer << 1) | br_.readSequence(1);
+				auto it = lookupTable.find({len, buffer});
+				if (it != lookupTable.end()) {
+					data_.push_back(it->second);
 					break;
 				}
 			}
