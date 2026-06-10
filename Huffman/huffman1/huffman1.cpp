@@ -86,9 +86,9 @@ public:
 
 		for (size_t i = 0; i < numSymbols_; i++) {
 			size_t buffer = 0;
-			for (uint8_t len = 1; len <= 32; len++) {
+			for (uint8_t i = 1; i <= 32; i++) {
 				buffer = (buffer << 1) | br_.readSequence(1);
-				auto it = lookupTable.find({len, buffer});
+				auto it = lookupTable.find({i, buffer});
 				if (it != lookupTable.end()) {
 					data_.push_back(it->second);
 					break;
