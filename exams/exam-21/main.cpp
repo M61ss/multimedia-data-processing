@@ -2,6 +2,8 @@
 #include <vector>
 #include <algorithm>
 #include <sstream>
+#include <cassert>
+#include <map>
 
 template <typename T>
 bool rawWrite(const T* val, std::ostream& os, const size_t& length) {
@@ -22,8 +24,10 @@ private:
 public:
 	Image() : rows_(-1), cols_(-1) {}
 	Image(const size_t& rows, const size_t& cols) : rows_(rows), cols_(cols), data_(rows * cols) {}
+	Image(const size_t& rows, const size_t& cols, std::vector<uint8_t>& data) : rows_(rows), cols_(cols), data_(data) {}
 
 	const uint8_t& operator()(const size_t& i, const size_t& j) const {
+		assert(i >= 0 && i < rows_ && j >= 0 && j < cols_);
 		return data_[i * cols_ + j];
 	}
 	uint8_t& operator()(const size_t& i, const size_t& j) {
@@ -38,6 +42,43 @@ public:
 
 	std::vector<uint8_t>& data() { return data_; }
 	uint8_t* rawData() { return data_.data(); }
+};
+
+class Adam7 {
+private:
+	Image mask_;
+
+public:
+	Adam7(std::vector<uint8_t>& mask, const size_t& width, const size_t& height) : mask_(height, width, mask) {}
+
+	int compress(std::ostream& os, const Image& img) {
+		os << "MULTIRES";
+		rawWrite(&img.cols(), os, 4);
+		rawWrite(&img.rows(), os, 4);
+
+		for (size_t i = 0; i < img.rows(); i += 8) {
+			for (size_t j = 0; j < img.cols(); j += 8) {
+				std::map<uint8_t, std::vector<uint8_t>> block;
+				for (size_t bi = 0; bi < 8 && i + bi < img.rows(); bi++) {
+					for (size_t bj = 0; bj < 8 && bj + j < img.cols(); bj++) {
+						block[mask_(bi, bj)].push_back(img(i + bi, j + bj));
+					}
+				}
+
+				for (const auto& [level, pixels] : block) {
+					rawWrite(pixels.data(), os, pixels.size());
+				}
+			}
+		}
+
+		return 0;
+	}
+
+	int decompress(std::istream& is, std::ostream& os) {
+
+
+		return 0;
+	}
 };
 
 struct PGMHeader {
@@ -83,27 +124,6 @@ Image readPGM(std::istream& is) {
 	return img;
 }
 
-int compress(std::ostream& os, const Image& img) {
-	os << "MULTIRES";
-	rawWrite(&img.cols(), os, 4);
-	rawWrite(&img.rows(), os, 4);
-
-	Image mlt(img.rows(), img.cols());
-	for (size_t i = 0; i < img.rows(); i += 8) {
-		for (size_t j = 0; j < img.cols(); j += 8) {
-			
-		}
-	}
-
-	return 0;
-}
-
-int decompress(std::istream& is, std::ostream& os) {
-
-
-	return 0;
-}
-
 int main(int argc, char** argv) {
 	if (argc != 4) {
 		return 1;
@@ -119,9 +139,18 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+	std::vector<uint8_t> m = { 1, 6, 4, 6, 2, 6, 4, 6,
+							   7 ,7, 7, 7, 7, 7, 7, 7,
+							   5, 6, 5, 6, 5, 6, 5, 6,
+							   7, 7, 7, 7, 7, 7, 7, 7,
+							   3, 6, 4, 6, 3, 6, 4, 6,
+							   7, 7, 7, 7, 7, 7, 7, 7,
+							   5, 6, 5, 6, 5, 6, 5, 6,
+							   7, 7, 7, 7, 7, 7, 7, 7 };
+	Adam7 a7(m, 8, 8);
 	if (mode == "c") {
 		Image img = readPGM(is);
-		compress(os, img);
+		a7.compress(os, img);
 	}
 	else if (mode == "d") {
 
