@@ -96,9 +96,9 @@ Image readPGM(std::istream& is) {
 }
 
 void writePGM(std::ostream& os, const Image& img) {
-	os << "P5\n"
-		<< img.rows() << "\n"
-		<< img.cols() << "\n"
+	os << "P5 "
+		<< img.cols() << " "
+		<< img.rows() << " "
 		<< "255\n";
 	rawWrite(img.rawData(), os, img.size());
 }
