@@ -44,39 +44,12 @@ public:
 	uint8_t* rawData() { return data_.data(); }
 };
 
-class Adam7 {
-private:
-	Image mask_;
+struct MLTHeader {
+	std::string magicNumber_;
+	size_t width_ = 0;
+	size_t height_ = 0;
 
-public:
-	Adam7(std::vector<uint8_t>& mask, const size_t& width, const size_t& height) : mask_(height, width, mask) {}
-
-	int compress(std::ostream& os, const Image& img) {
-		os << "MULTIRES";
-		rawWrite(&img.cols(), os, 4);
-		rawWrite(&img.rows(), os, 4);
-
-		std::map<uint8_t, std::vector<uint8_t>> mlt;
-		for (size_t rowIdx = 0; rowIdx < img.rows(); rowIdx += 8) {
-			for (size_t i = 0; i < 8 && i + rowIdx < img.rows(); i++) {
-				for (size_t j = 0; j < img.cols(); j++) {
-					mlt[mask_(i % 8, j % 8)].push_back(img(i + rowIdx, j));
-				}
-			}
-		}
-
-		for (const auto& [level, pixels] : mlt) {
-			rawWrite(pixels.data(), os, pixels.size());
-		}
-
-		return 0;
-	}
-
-	int decompress(std::istream& is, std::ostream& os) {
-
-
-		return 0;
-	}
+	MLTHeader() : magicNumber_(8, 0) {}
 };
 
 struct PGMHeader {
@@ -122,6 +95,89 @@ Image readPGM(std::istream& is) {
 	return img;
 }
 
+void writePGM(std::ostream& os, const Image& img) {
+	os << "P5\n"
+		<< img.rows() << "\n"
+		<< img.cols() << "\n"
+		<< "255\n";
+	rawWrite(img.rawData(), os, img.size());
+}
+
+class Adam7 {
+private:
+	Image mask_;
+
+public:
+	Adam7(std::vector<uint8_t>& mask, const size_t& width, const size_t& height) : mask_(height, width, mask) {}
+
+	int compress(std::ostream& os, const Image& img) {
+		os << "MULTIRES";
+		rawWrite(&img.cols(), os, 4);
+		rawWrite(&img.rows(), os, 4);
+
+		std::map<uint8_t, std::vector<uint8_t>> mlt;
+		for (size_t rowIdx = 0; rowIdx < img.rows(); rowIdx += 8) {
+			for (size_t i = 0; i < 8 && i + rowIdx < img.rows(); i++) {
+				for (size_t j = 0; j < img.cols(); j++) {
+					mlt[mask_(i % 8, j % 8)].push_back(img(i + rowIdx, j));
+				}
+			}
+		}
+
+		for (const auto& [level, pixels] : mlt) {
+			rawWrite(pixels.data(), os, pixels.size());
+		}
+
+		return 0;
+	}
+
+	int decompress(const std::string& prefix, std::istream& is) {
+		MLTHeader mltHdr;
+		std::map<uint8_t, std::vector<uint8_t>> mlt;
+		rawRead(mltHdr.magicNumber_.data(), is, 8);
+		if (mltHdr.magicNumber_ != "MULTIRES") {
+			return 1;
+		}
+		rawRead(&mltHdr.width_, is, 4);
+		rawRead(&mltHdr.height_, is, 4);
+
+		size_t nOne = (mltHdr.height_ * mltHdr.width_ + 63) / 64;
+
+		mlt[1].resize(nOne);
+		mlt[2].resize(nOne);
+		mlt[3].resize(nOne * 2);
+		mlt[4].resize(nOne * 4);
+		mlt[5].resize(nOne * 8);
+		mlt[6].resize(nOne * 16);
+		mlt[7].resize(nOne * 32);
+
+		std::map<uint8_t, Image> rec;
+		for (auto& [level, values] : mlt) {
+			rawRead(values.data(), is, values.size());
+			std::reverse(values.begin(), values.end());
+			rec[level] = Image(mltHdr.height_, mltHdr.width_);
+		}
+
+		for (size_t i = 0; i < mltHdr.height_; i++) {
+			for (size_t j = 0; j < mltHdr.width_; j++) {
+				rec[7](i, j) = mlt[mask_(i % 8, j % 8)].back();
+				mlt[mask_(i % 8, j % 8)].pop_back();
+			}
+		}
+
+		for (const auto& [level, img] : rec) {
+			char l = '0' + level;
+			std::ofstream os(prefix + "_" + l + ".pgm", std::ios::binary);
+			if (!os) {
+				return 1;
+			}
+			writePGM(os, img);
+		}
+
+		return 0;
+	}
+};
+
 int main(int argc, char** argv) {
 	if (argc != 4) {
 		return 1;
@@ -130,10 +186,6 @@ int main(int argc, char** argv) {
 	std::string mode(argv[1]);
 	std::ifstream is(argv[2], std::ios::binary);
 	if (!is) {
-		return 1;
-	}
-	std::ofstream os(argv[3], std::ios::binary);
-	if (!os) {
 		return 1;
 	}
 
@@ -147,11 +199,14 @@ int main(int argc, char** argv) {
 							   7, 7, 7, 7, 7, 7, 7, 7 };
 	Adam7 a7(m, 8, 8);
 	if (mode == "c") {
-		Image img = readPGM(is);
-		a7.compress(os, img);
+		std::ofstream os(argv[3], std::ios::binary);
+		if (!os) {
+			return 1;
+		}
+		a7.compress(os, readPGM(is));
 	}
 	else if (mode == "d") {
-
+		a7.decompress(argv[3], is);
 	}
 	else {
 		return 1;
