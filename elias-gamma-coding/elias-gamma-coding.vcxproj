@@ -139,11 +139,13 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="decoder.cpp" />
+    <ClCompile Include="encoder.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engine\decoder.hpp" />
-    <ClInclude Include="engine\encoder.hpp" />
+    <ClInclude Include="decoder.hpp" />
+    <ClInclude Include="encoder.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
