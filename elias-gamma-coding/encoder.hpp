@@ -1,0 +1,6 @@
+#ifndef ELIAS_ENCODER_H
+#define ELIAS_ENCODER_H
+
+
+
+#endif // ELIAS_ENCODER_H
