@@ -1,7 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Project Path="elias-gamma-coding.vcxproj" Id="58305a89-58f6-445d-948c-b3e2c9cb1aff" />
-</Solution>
