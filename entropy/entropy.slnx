@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="entropy.vcxproj" />
+  <Project Path="entropy.vcxproj" Id="e8b547b6-c9ae-4b95-9faa-36fce83fdcb7" />
 </Solution>

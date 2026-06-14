@@ -35,6 +35,8 @@ int main(int argc, char** argv) {
 	}
 
 	std::cout << "File '" << argv[1] << "':\n\n"
+		<< " - Size: " << nBytes << " B\n"
+		<< " - Number of symbols: " << probs.size() << "\n"
 		<< " - Entropy: " << entropy << "\n";
 
 	return 0;
